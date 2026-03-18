@@ -1199,7 +1199,11 @@ const App = {
     $('search').addEventListener('keydown', e => {
       if (e.key === 'ArrowDown') { e.preventDefault(); App.moveHighlight(1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); App.moveHighlight(-1); }
-      else if (e.key === 'Enter' && highlightIdx >= 0) { e.preventDefault(); App.selectFromDropdown(highlightIdx); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (highlightIdx >= 0) App.selectFromDropdown(highlightIdx);
+        else if ($('search').value.trim()) App.addManual($('search').value.trim());
+      }
       else if (e.key === 'Escape') App.hideDropdown();
     });
 
@@ -1313,7 +1317,14 @@ const App = {
         </div>`;
       });
     });
-    if (!html) html = '<div style="padding:12px; color:var(--text-mut); font-size:13px;">Sin resultados</div>';
+    // Opción para agregar producto manual
+    const nombreManual = $('search').value.trim();
+    if (nombreManual) {
+      html += `<div class="dd-item dd-add" onclick="App.addManual('${nombreManual.replace(/'/g, "\\'")}')">
+        <span style="color:var(--accent); font-weight:700;">+ Agregar "${nombreManual}" manualmente</span>
+      </div>`;
+    }
+    if (!html) html = '<div style="padding:12px; color:var(--text-mut); font-size:13px;">Escribí para buscar o agregar</div>';
     $('dropdown').innerHTML = html;
     highlightIdx = -1;
   },
@@ -1344,6 +1355,31 @@ const App = {
     App.calcAddPreview();
     $('af-dosis').focus();
     $('af-dosis').select();
+  },
+
+  addManual(nombre) {
+    prodSeleccionado = {
+      producto: nombre,
+      cat: 'Otros',
+      unidad: 'L',
+      iva_pct: 21,
+      proveedor: '',
+      costo_usd: 0,
+      margen_pct: 0,
+      precio_usd: 0,
+      formulacion: '',
+      presentacion: 0
+    };
+    App.hideDropdown();
+    $('search').value = '';
+
+    $('add-form').classList.add('show');
+    $('af-name').textContent = nombre;
+    $('af-info').textContent = 'Producto manual — completá precio y dosis';
+    $('af-precio').value = '';
+    $('af-dosis').value = '';
+    App.calcAddPreview();
+    $('af-precio').focus();
   },
 
   calcAddPreview() {

@@ -625,7 +625,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
             <div>
               <div class="form-lbl">Hectáreas</div>
               <input id="hectareas" type="number" class="inp inp-sm" placeholder="Totales" min="1" value=""
-                oninput="App.renderRows()">
+                oninput="App.renderRows(); App.calcAddPreview()">
             </div>
           </div>
         </div>
@@ -673,6 +673,10 @@ input, select, button { font-family: inherit; font-size: inherit; }
               <div>
                 <div class="form-lbl">$/ha</div>
                 <div id="af-costoha" style="font-family:var(--mono); font-size:14px; font-weight:700; color:var(--accent); padding:7px 0;">—</div>
+              </div>
+              <div>
+                <div class="form-lbl">Vol. total</div>
+                <div id="af-vol" style="font-family:var(--mono); font-size:14px; font-weight:700; color:var(--green); padding:7px 0;">—</div>
               </div>
               <button class="btn btn-accent btn-sm" onclick="App.confirmarAdd()">Agregar</button>
             </div>
@@ -1162,8 +1166,12 @@ const App = {
   calcAddPreview() {
     const precio = parseFloat($('af-precio').value) || 0;
     const dosis = parseFloat($('af-dosis').value) || 0;
+    const has = parseFloat($('hectareas').value) || 0;
     const costoHa = precio * dosis;
+    const vol = dosis * has;
     $('af-costoha').textContent = costoHa > 0 ? '$' + fmt(costoHa) : '—';
+    const unidad = prodSeleccionado ? prodSeleccionado.unidad : '';
+    $('af-vol').textContent = vol > 0 ? fmt(vol) + ' ' + unidad : '—';
   },
 
   confirmarAdd() {

@@ -1215,7 +1215,7 @@ const App = {
       producto: prodSeleccionado.producto,
       cat: prodSeleccionado.cat,
       precio,
-      unidad: prodSeleccionado.unidad,
+      unidad: prodSeleccionado.unidad || 'L',
       dosis,
       iva_pct: prodSeleccionado.iva_pct,
       proveedor: prodSeleccionado.proveedor || '',
@@ -1441,33 +1441,36 @@ const App = {
     const gris = [100, 116, 139];
     const verde = [22, 163, 74];
 
-    // ── Header con fondo navy ──
+    // ── Header con fondo navy (compacto) ──
+    const headerH = 28;
     doc.setFillColor(...navy);
-    doc.rect(0, 0, W, 38, 'F');
+    doc.rect(0, 0, W, headerH, 'F');
 
-    // Logo
-    if (logoDataUrl) {
-      try { doc.addImage(logoDataUrl, 'PNG', margin, 6, 45, 26); } catch(e) {}
-    }
-
-    // Título
+    // Título y fecha a la IZQUIERDA
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
-    doc.text('COTIZACIÓN', W - margin, 16, { align: 'right' });
-    doc.setFontSize(10);
+    doc.text('COTIZACIÓN', margin, 12);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(dateStr() + ' · ' + ($('vendedor').value || ''), W - margin, 23, { align: 'right' });
+    doc.text(dateStr() + ' · ' + ($('vendedor').value || ''), margin, 18);
 
-    // Plazo
+    // Plazo debajo del título
     const fin = financiacion.find(f => f.plazo === plazoActual);
     const plazoLabel = fin ? fin.label : 'Contado';
-    doc.setFontSize(11);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...accent);
-    doc.text('Condición: ' + plazoLabel, W - margin, 32, { align: 'right' });
+    doc.text('Condición: ' + plazoLabel, margin, 24);
 
-    y = 45;
+    // Logo a la DERECHA — proporción original (246:98 = 2.51:1), 15% más chico
+    if (logoDataUrl) {
+      const logoW = 33;  // ~38 * 0.85
+      const logoH = logoW / 2.51;  // mantener proporción
+      try { doc.addImage(logoDataUrl, 'PNG', W - margin - logoW, 5, logoW, logoH); } catch(e) {}
+    }
+
+    y = headerH + 6;
 
     // ── Info cliente ──
     const cliente = $('cliente').value || '';

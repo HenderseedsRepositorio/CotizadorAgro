@@ -1469,34 +1469,24 @@ const App = {
       doc.text('FORMULACIÓN', colR[3] + 2, y + 5.5);
       y += 8;
 
-      Object.entries(grupos).forEach(([cat, items]) => {
-        doc.setFillColor(241, 245, 249);
-        doc.rect(margin, y, contentW, 6, 'F');
-        doc.setTextColor(...accent);
-        doc.setFont('helvetica', 'bold');
+      rows.forEach((r, i) => {
+        if (y > 265) { doc.addPage(); y = 15; }
+        const vol = has > 0 ? r.dosis * has : null;
+        if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
+
+        doc.setTextColor(...navy);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        const nombre = r.producto.length > 38 ? r.producto.substring(0, 36) + '...' : r.producto;
+        doc.text(nombre, colR[0] + 3, y + 4.5);
         doc.setFontSize(8);
-        doc.text(cat.toUpperCase(), margin + 3, y + 4);
-        y += 6;
-
-        items.forEach((r, i) => {
-          if (y > 265) { doc.addPage(); y = 15; }
-          const vol = has > 0 ? r.dosis * has : null;
-          if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
-
-          doc.setTextColor(...navy);
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          const nombre = r.producto.length > 38 ? r.producto.substring(0, 36) + '...' : r.producto;
-          doc.text(nombre, colR[0] + 3, y + 4.5);
-          doc.setFontSize(8);
-          doc.text(r.dosis + ' ' + r.unidad + '/ha', colR[1] + 2, y + 4.5);
-          doc.setFont('helvetica', 'bold');
-          doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colR[2] + 2, y + 4.5);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...gris);
-          doc.text(r.formulacion || '—', colR[3] + 2, y + 4.5);
-          y += 7;
-        });
+        doc.text(r.dosis + ' ' + r.unidad + '/ha', colR[1] + 2, y + 4.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colR[2] + 2, y + 4.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...gris);
+        doc.text(r.formulacion || '—', colR[3] + 2, y + 4.5);
+        y += 7;
       });
     } else {
       // COTIZACIÓN: Producto | Dosis/ha | Volumen | Precio | $/ha | Monto
@@ -1516,25 +1506,16 @@ const App = {
 
       let totalHa = 0, totalIvaHa = 0;
 
-      Object.entries(grupos).forEach(([cat, items]) => {
-        doc.setFillColor(241, 245, 249);
-        doc.rect(margin, y, contentW, 6, 'F');
-        doc.setTextColor(...accent);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.text(cat.toUpperCase(), margin + 3, y + 4);
-        y += 6;
+      rows.forEach((r, i) => {
+        if (y > 265) { doc.addPage(); y = 15; }
+        const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+        const costoHa = precioP * r.dosis;
+        const vol = has > 0 ? r.dosis * has : null;
+        const monto = has > 0 ? precioP * r.dosis * has : null;
+        totalHa += costoHa;
+        totalIvaHa += costoHa * (r.iva_pct / 100);
 
-        items.forEach((r, i) => {
-          if (y > 265) { doc.addPage(); y = 15; }
-          const precioP = Calc.precioConRecargo(r.precio, plazoActual);
-          const costoHa = precioP * r.dosis;
-          const vol = has > 0 ? r.dosis * has : null;
-          const monto = has > 0 ? precioP * r.dosis * has : null;
-          totalHa += costoHa;
-          totalIvaHa += costoHa * (r.iva_pct / 100);
-
-          if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
+        if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
 
           doc.setTextColor(...navy);
           doc.setFont('helvetica', 'normal');
@@ -1549,9 +1530,8 @@ const App = {
           doc.text('$' + fmt(precioP), colC[3] + 2, y + 4.5);
           doc.text('$' + fmt(costoHa), colC[4] + 2, y + 4.5);
           doc.setFont('helvetica', 'bold');
-          doc.text(monto ? '$' + fmt(monto) : '—', colC[5] + 2, y + 4.5);
-          y += 7;
-        });
+        doc.text(monto ? '$' + fmt(monto) : '—', colC[5] + 2, y + 4.5);
+        y += 7;
       });
 
       // Totales

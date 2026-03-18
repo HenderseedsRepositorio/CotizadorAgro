@@ -478,14 +478,17 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .wa-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1280px;
   background: white;
   border-top: 1px solid var(--border);
   padding: 10px 12px;
   display: flex;
   gap: 8px;
   z-index: 90;
+  box-sizing: border-box;
 }
 .wa-bar .btn { flex: 1; }
 
@@ -749,8 +752,8 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
-  <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')">Cotización</button>
-  <button class="btn btn-outline" onclick="App.compartirPDF('receta')">Receta</button>
+  <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')">Compartir Cotización</button>
+  <button class="btn btn-outline" onclick="App.compartirPDF('receta')">Compartir Receta</button>
 </div>
 
 

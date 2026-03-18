@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cotizador Agroinsumos — Henderseeds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1e293b;
+  --navy-light: #334155;
+  --accent: #D97706;
+  --accent-dark: #B45309;
+  --accent-bg: #FEF3C7;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --red: #ef4444;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-sec: #64748b;
+  --text-mut: #94a3b8;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --title: 'Archivo Black', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 70px;
+}
+input, select, button { font-family: inherit; font-size: inherit; }
+
+/* ── Header ── */
+.header {
+  background: var(--navy);
+  color: white;
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.brand { display: flex; align-items: center; gap: 2px; flex-direction: column; }
+.brand-logo { height: 50px; width: auto; object-fit: contain; }
+.brand small { font-size: 10px; opacity: .5; }
+.vend-sel {
+  background: var(--navy-light);
+  color: white;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.vend-sel option { background: var(--navy); }
+.tabs {
+  display: flex;
+  gap: 3px;
+  background: rgba(255,255,255,.08);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.5);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.tab-btn.active { background: var(--accent); color: white; }
+
+/* ── Layout principal ── */
+.main { max-width: 1280px; margin: 0 auto; padding: 12px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Desktop: dos columnas */
+.layout-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 860px) {
+  .layout-2col {
+    grid-template-columns: 1fr 420px;
+    align-items: start;
+  }
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-family: var(--title);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-sec);
+  margin-bottom: 10px;
+}
+
+/* ── Inputs ── */
+.inp {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: var(--text);
+  outline: none;
+}
+.inp:focus { border-color: var(--accent); }
+.inp-sm { padding: 6px 8px; font-size: 13px; }
+.inp-xs { padding: 4px 6px; font-size: 12px; width: 70px; text-align: right; font-family: var(--mono); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.form-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-sec);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 3px;
+}
+
+/* ── Filas de cotización ── */
+.rows-header {
+  display: grid;
+  grid-template-columns: 1fr 60px 55px 55px 60px 26px;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-sec);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.row-item {
+  display: grid;
+  grid-template-columns: 1fr 60px 55px 55px 60px 26px;
+  gap: 4px;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  margin-bottom: 5px;
+  box-shadow: var(--shadow);
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.row-prod { display: flex; flex-direction: column; min-width: 0; }
+.row-prod-name {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-prod-meta { font-size: 10px; color: var(--text-mut); }
+.row-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+.row-val.costo { color: var(--accent); font-weight: 700; font-size: 13px; }
+.row-rm {
+  background: none;
+  border: none;
+  color: var(--text-mut);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  text-align: center;
+}
+.row-rm:hover { color: var(--red); }
+
+/* ── Agregar producto ── */
+.add-area {
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.add-area.active { border-color: var(--accent); }
+.search-wrap { position: relative; }
+.search-inp {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: white;
+  outline: none;
+}
+.search-inp:focus { border-color: var(--accent); }
+.search-inp::placeholder { color: var(--text-mut); }
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  display: none;
+}
+.dropdown.show { display: block; }
+.dd-cat {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--accent);
+  padding: 8px 12px 4px;
+  background: var(--bg);
+}
+.dd-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  border-bottom: 1px solid var(--bg);
+}
+.dd-item:hover, .dd-item.highlighted { background: var(--accent-bg); }
+.dd-item-price {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* ── Inline add form ── */
+.add-form {
+  display: none;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.add-form.show { display: block; }
+.add-form-prod {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.add-form-info {
+  font-size: 12px;
+  color: var(--text-sec);
+  margin-bottom: 8px;
+}
+.add-form-info span {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+.add-form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+/* ── Plazo ── */
+.plazo-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.plazo-chip {
+  flex: 1;
+  padding: 7px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.plazo-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+.plazo-chip small { display: block; font-weight: 400; font-size: 10px; opacity: .7; }
+
+/* ── Totales ── */
+.totales {
+  background: var(--navy);
+  color: white;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.tot-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+.tot-row.big {
+  border-top: 1px solid rgba(255,255,255,.15);
+  margin-top: 4px;
+  padding-top: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.tot-row .mono { font-family: var(--mono); }
+
+/* ── Botones ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-accent { background: var(--accent); color: white; }
+.btn-accent:hover { background: var(--accent-dark); }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #15803d; }
+.btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+
+/* ── Panel referencia (derecho) ── */
+.ref-panel {
+  position: sticky;
+  top: 100px;
+}
+.ref-panel .card { margin-bottom: 0; }
+.ref-table-wrap {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+}
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ref-table th {
+  position: sticky;
+  top: 0;
+  background: var(--navy);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 8px 6px;
+  text-align: left;
+  white-space: nowrap;
+  z-index: 2;
+}
+.ref-table th.num { text-align: right; }
+.ref-table td {
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ref-table td.num {
+  text-align: right;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.ref-table tr:hover { background: var(--accent-bg); }
+.ref-table tr.cat-row td {
+  background: var(--bg);
+  font-family: var(--title);
+  font-size: 11px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 6px;
+  border-bottom: 2px solid var(--accent);
+}
+.ref-table .prod-name { font-weight: 600; white-space: nowrap; }
+.ref-table .droga { font-size: 10px; color: var(--text-sec); max-width: 180px; }
+.ref-table .prov { font-size: 11px; color: var(--text-sec); }
+.ref-table .resid { font-size: 11px; text-align: center; }
+.ref-table .precio-col { color: var(--accent); font-weight: 700; }
+.ref-table .costo-ha-col { color: var(--green); font-weight: 600; }
+
+/* Filtro referencia */
+.ref-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ref-filter-inp {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+.ref-filter-inp:focus { border-color: var(--accent); }
+
+/* Mobile: panel referencia como toggle */
+.ref-toggle {
+  display: none;
+  width: 100%;
+  padding: 10px;
+  background: var(--navy-light);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+@media (max-width: 859px) {
+  .ref-toggle { display: block; }
+  .ref-panel { display: none; }
+  .ref-panel.open { display: block; }
+}
+
+/* ── WA bar ── */
+.wa-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 90;
+}
+.wa-bar .btn { flex: 1; }
+
+/* ── WA preview ── */
+.wa-preview {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 200;
+  justify-content: center;
+  align-items: flex-end;
+}
+.wa-preview.show { display: flex; }
+.wa-sheet {
+  background: white;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px 16px;
+  animation: sheetUp .25s ease;
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.wa-msg {
+  background: #DCF8C6;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+.wa-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wa-actions .btn-green { grid-column: 1 / -1; }
+
+/* ── Lista de precios ── */
+.lista-cat {
+  font-family: var(--title);
+  font-size: 13px;
+  color: var(--accent);
+  padding: 8px 0 4px;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: 4px;
+  margin-top: 14px;
+}
+.lista-cat:first-child { margin-top: 0; }
+.lista-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.lista-name { font-size: 13px; font-weight: 500; }
+.lista-unit { font-size: 11px; color: var(--text-mut); }
+.lista-price { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); white-space: nowrap; }
+
+/* ── Historial ── */
+.hist-empty { text-align: center; padding: 40px 20px; color: var(--text-mut); }
+
+/* ── Status ── */
+.status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-mut); padding: 6px 0; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.status-dot.on { background: var(--green); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="brand">
+        <img src="00-LOGO HENDERSEEDS TRANSPARENTE.png" alt="Henderseeds" class="brand-logo">
+      </div>
+      <select id="vendedor" class="vend-sel">
+        <option value="">Vendedor...</option>
+        <option value="Alvaro">Alvaro</option>
+        <option value="Gonzalo">Gonzalo</option>
+        <option value="Juan Augusto">Juan Augusto</option>
+      </select>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="cotizar">Cotizar</button>
+      <button class="tab-btn" data-tab="lista">Lista</button>
+      <button class="tab-btn" data-tab="historial">Historial</button>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ═══ TAB COTIZAR ═══ -->
+  <section id="tab-cotizar" class="tab-content active">
+    <div class="layout-2col">
+
+      <!-- ── COLUMNA IZQUIERDA: Cotización ── -->
+      <div class="col-cotiz">
+        <div class="card">
+          <div class="form-row-3">
+            <div>
+              <div class="form-lbl">Cliente</div>
+              <input id="cliente" type="text" class="inp inp-sm" placeholder="Nombre">
+            </div>
+            <div>
+              <div class="form-lbl">Localidad</div>
+              <input id="localidad" type="text" class="inp inp-sm" placeholder="Localidad">
+            </div>
+            <div>
+              <div class="form-lbl">Hectáreas</div>
+              <input id="hectareas" type="number" class="inp inp-sm" placeholder="Totales" min="1" value=""
+                oninput="App.renderRows()">
+            </div>
+          </div>
+        </div>
+
+        <div class="plazo-bar">
+          <button class="plazo-chip active" data-plazo="contado" onclick="App.setPlazo(this)">Contado <small>0%</small></button>
+          <button class="plazo-chip" data-plazo="mayo2026" onclick="App.setPlazo(this)">Mayo 26 <small>+2%</small></button>
+          <button class="plazo-chip" data-plazo="dic2026" onclick="App.setPlazo(this)">Dic 26 <small>+6%</small></button>
+        </div>
+
+        <div class="rows-header">
+          <span>Producto</span>
+          <span style="text-align:right">$/ud</span>
+          <span style="text-align:right">Dosis</span>
+          <span style="text-align:right">$/ha</span>
+          <span style="text-align:right">Total</span>
+          <span></span>
+        </div>
+
+        <div id="rows"></div>
+
+        <!-- Agregar producto -->
+        <div class="add-area" id="add-area">
+          <div class="search-wrap">
+            <input type="text" class="search-inp" id="search" placeholder="Buscar producto..." autocomplete="off"
+              onfocus="App.showDropdown()" oninput="App.filterDropdown()">
+            <div class="dropdown" id="dropdown"></div>
+          </div>
+          <div class="add-form" id="add-form">
+            <div class="add-form-prod" id="af-name">—</div>
+            <div class="add-form-info" id="af-info"></div>
+            <div class="add-form-fields">
+              <div>
+                <div class="form-lbl">Precio/ud</div>
+                <input type="number" class="inp inp-sm" id="af-precio" step="0.01" min="0">
+              </div>
+              <div>
+                <div class="form-lbl">Dosis/ha</div>
+                <input type="number" class="inp inp-sm" id="af-dosis" step="0.01" min="0" placeholder="0.5">
+              </div>
+              <div>
+                <div class="form-lbl">$/ha</div>
+                <div id="af-costoha" style="font-family:var(--mono); font-size:14px; font-weight:700; color:var(--accent); padding:7px 0;">—</div>
+              </div>
+              <button class="btn btn-accent btn-sm" onclick="App.confirmarAdd()">Agregar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totales -->
+        <div id="totales" class="totales" style="display:none;">
+          <div class="tot-row">
+            <span>Costo/ha</span>
+            <span class="mono" id="t-neto">—</span>
+          </div>
+          <div class="tot-row">
+            <span>IVA/ha</span>
+            <span class="mono" id="t-iva">—</span>
+          </div>
+          <div class="tot-row big">
+            <span>Total/ha (c/IVA)</span>
+            <span class="mono" id="t-total">—</span>
+          </div>
+          <div class="tot-row big" id="t-total-has-row" style="display:none; border-top: 1px solid rgba(255,255,255,.25); margin-top:6px; padding-top:8px;">
+            <span>Total <span id="t-has-label">0</span> has</span>
+            <span class="mono" id="t-total-has">—</span>
+          </div>
+        </div>
+
+        <div class="status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Offline — datos locales</span>
+        </div>
+      </div>
+
+      <!-- ── COLUMNA DERECHA: Panel de referencia ── -->
+      <div>
+        <button class="ref-toggle" id="ref-toggle" onclick="App.toggleRef()">Ver tabla de precios de referencia</button>
+        <div class="ref-panel" id="ref-panel">
+          <div class="card" style="padding:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div class="card-title" style="margin:0;">Referencia de precios</div>
+            </div>
+            <div class="ref-filter">
+              <input type="text" class="ref-filter-inp" id="ref-filter" placeholder="Filtrar productos..." oninput="App.renderRef()">
+            </div>
+            <div class="ref-table-wrap">
+              <table class="ref-table" id="ref-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Formulación</th>
+                    <th>Prov.</th>
+                    <th class="num">$/ud</th>
+                    <th class="num">Pres.</th>
+                    <th class="num">Margen</th>
+                    <th class="num">Stock</th>
+                  </tr>
+                </thead>
+                <tbody id="ref-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ TAB LISTA ═══ -->
+  <section id="tab-lista" class="tab-content">
+    <div class="plazo-bar">
+      <button class="plazo-chip active" data-plazo="contado" onclick="App.setListaPlazo(this)">Contado</button>
+      <button class="plazo-chip" data-plazo="mayo2026" onclick="App.setListaPlazo(this)">Mayo 26</button>
+      <button class="plazo-chip" data-plazo="dic2026" onclick="App.setListaPlazo(this)">Dic 26</button>
+    </div>
+    <div id="lista-body"></div>
+  </section>
+
+  <!-- ═══ TAB HISTORIAL ═══ -->
+  <section id="tab-historial" class="tab-content">
+    <div id="hist-body">
+      <div class="hist-empty">
+        <p style="font-size:32px; margin-bottom:8px;">&#128203;</p>
+        <p>Sin cotizaciones registradas</p>
+        <p style="font-size:12px; margin-top:4px;">Aparecerán aquí al compartir por WhatsApp</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- WA bar -->
+<div class="wa-bar" id="wa-bar" style="display:none;">
+  <button class="btn btn-green" onclick="App.enviarWA()">Enviar por WhatsApp</button>
+  <button class="btn btn-outline" onclick="App.copiarTexto()">Copiar</button>
+</div>
+
+<!-- WA preview -->
+<div class="wa-preview" id="wa-preview" onclick="App.cerrarPreview(event)">
+  <div class="wa-sheet">
+    <div class="wa-msg" id="wa-msg"></div>
+    <div class="wa-actions">
+      <button class="btn btn-green" onclick="App.abrirWA()">Abrir WhatsApp</button>
+      <button class="btn btn-outline" onclick="App.copiarYCerrar()">Copiar texto</button>
+      <button class="btn btn-outline" onclick="App.cerrarPreview(null,true)" style="grid-column:1/-1;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dateStr = (d = new Date()) => d.toLocaleDateString('es-AR');
+
+/* ══════════════════════════════════════════
+   CATÁLOGO FALLBACK — copia de "Catalogo Agronomia" en Sheets
+   Columnas: producto, presentacion, formulacion, proveedor,
+   iva_pct, costo_usd, margen_pct, precio_usd, dosis_sug, stock
+   Cuando conecte a Sheets se sobreescribe con datos frescos.
+   ══════════════════════════════════════════ */
+const CATALOGO_FALLBACK = {
+  "Herbicidas": [
+    { producto: "SULFOSATO TOUCHDOWN X 20 LTS", presentacion: 20, unidad: "L", formulacion: "glifosato 62%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 4.25, margen_pct: 8, precio_usd: 4.59, dosis_sug: null, stock: 4940 },
+    { producto: "NUVOX X 20 LT", presentacion: 20, unidad: "L", formulacion: "glifosato 62%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 4.25, margen_pct: 8, precio_usd: 4.60, dosis_sug: null, stock: 0 },
+    { producto: "ACURON UNO X 5L", presentacion: 5, unidad: "L", formulacion: "biciclopirona 20%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 38.13, margen_pct: 8, precio_usd: 41.20, dosis_sug: null, stock: 0 },
+    { producto: "GESAPRIM 90 WDG X 10KG", presentacion: 10, unidad: "kg", formulacion: "atrazina 90%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 6.40, margen_pct: 8, precio_usd: 6.91, dosis_sug: null, stock: 840 },
+    { producto: "DUAL GOLD X 6,5 lt", presentacion: 6.5, unidad: "L", formulacion: "S-metalocloro 96%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 6.10, margen_pct: 13, precio_usd: 6.89, dosis_sug: null, stock: 6.5 },
+    { producto: "2,4D VOLERIS X 20 LT", presentacion: 20, unidad: "L", formulacion: "2,4D 89%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 5.09, margen_pct: 10, precio_usd: 5.60, dosis_sug: null, stock: 260 },
+    { producto: "EDDUS X 20 LT", presentacion: 20, unidad: "L", formulacion: "fomesafen 11,95% + S-Metalocloro 51,8%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 8.91, margen_pct: 10, precio_usd: 9.80, dosis_sug: null, stock: 1380 },
+    { producto: "AXIAL PLUS X 5 LT", presentacion: 5, unidad: "L", formulacion: "pinoxaden 5% + cloquintocet 1,25%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 44.54, margen_pct: 9, precio_usd: 48.55, dosis_sug: null, stock: 100 },
+    { producto: "FLEXSTAR X 20 LT", presentacion: 20, unidad: "L", formulacion: "glifosato 32,5% + fomesafen 7,1% + pydiflumetofen 20%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 6.88, margen_pct: 8, precio_usd: 7.43, dosis_sug: null, stock: 180 },
+    { producto: "HEAT X 0,35 KG", presentacion: 0.35, unidad: "kg", formulacion: "Saflufenacil 70%", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 297.67, margen_pct: 9.5, precio_usd: 325.95, dosis_sug: null, stock: 28 },
+    { producto: "PIVOT X 5 LT", presentacion: 5, unidad: "L", formulacion: "Imazetapir 10,6%", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 7.50, margen_pct: 9, precio_usd: 8.18, dosis_sug: null, stock: 285 },
+    { producto: "CLETODIM ZYNION PLUS X 20 LT", presentacion: 20, unidad: "L", formulacion: "Cletodim 24%", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 8.50, margen_pct: 8, precio_usd: 9.20, dosis_sug: null, stock: 0 },
+    { producto: "CONVEY BASF X 1 LT", presentacion: 1, unidad: "L", formulacion: "", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 282.40, margen_pct: 8, precio_usd: 304.99, dosis_sug: null, stock: 0 },
+    { producto: "SULFENTRAZONE CAPAZ 50 X 5 LT", presentacion: 5, unidad: "L", formulacion: "Sulfentrazone 50%", proveedor: "FMC Quimica S.A", iva_pct: 21, costo_usd: 18.00, margen_pct: 10, precio_usd: 19.80, dosis_sug: null, stock: 0 },
+    { producto: "SULFENTRAZONE CAPAZ 50 X 10 LT", presentacion: 10, unidad: "L", formulacion: "Sulfentrazone 50%", proveedor: "FMC Quimica S.A", iva_pct: 21, costo_usd: 18.00, margen_pct: 10, precio_usd: 19.80, dosis_sug: null, stock: 650 }
+  ],
+  "Insecticidas": [
+    { producto: "AMPLIGO X 1LT", presentacion: 1, unidad: "L", formulacion: "clorantraniliprole 10% + Lambdacialotrina 5%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 76.26, margen_pct: 13, precio_usd: 86.17, dosis_sug: null, stock: 159 },
+    { producto: "CAREXO X 1 LT", presentacion: 1, unidad: "L", formulacion: "clorantraniliprole 10% + Lambdacialotrina 5%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 76.26, margen_pct: 13, precio_usd: 86.17, dosis_sug: null, stock: 1 },
+    { producto: "ZETAMETRINA MUSTANG X 5 LT", presentacion: 5, unidad: "L", formulacion: "Zetametrina 20%", proveedor: "FMC Quimica S.A", iva_pct: 21, costo_usd: 19.44, margen_pct: 8, precio_usd: 21.00, dosis_sug: null, stock: 20 }
+  ],
+  "Fungicidas": [
+    { producto: "ELATUS ACE X 5 LT", presentacion: 5, unidad: "L", formulacion: "propiconazole 25% + benzovindiflupyr 4%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 41.21, margen_pct: 9, precio_usd: 44.90, dosis_sug: null, stock: 0 },
+    { producto: "MIRAVIS DUO X 5 LT", presentacion: 5, unidad: "L", formulacion: "difenoconazole 12,5% + pydiflumetofen 7,5%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 40.59, margen_pct: 8, precio_usd: 43.84, dosis_sug: null, stock: 155 },
+    { producto: "MIRAVIS TRIPLE PACK X 6,3 LT", presentacion: 6.3, unidad: "L", formulacion: "propiconazole + benzovindiflupyr", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 0, margen_pct: 8, precio_usd: 0, dosis_sug: null, stock: 0 },
+    { producto: "ARTEA X 5 LT", presentacion: 5, unidad: "L", formulacion: "Propiconazole 25% + Cyproconazole 8%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 9.20, margen_pct: 8, precio_usd: 9.94, dosis_sug: null, stock: 85 },
+    { producto: "OPERA X 5 LT", presentacion: 5, unidad: "L", formulacion: "Pyraclostrobin 13,3% + Epoxiconazole 5,0%", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 21.00, margen_pct: 9, precio_usd: 22.89, dosis_sug: null, stock: 0 }
+  ],
+  "Curasemillas": [
+    { producto: "CURASEM VIBRANCE GOLD X 5 LT", presentacion: 5, unidad: "L", formulacion: "difenoconazole 2.5% + fludioxonil 2.5% + sedaxane 5%", proveedor: "SYNGENTA S.A.", iva_pct: 21, costo_usd: 38.16, margen_pct: 8, precio_usd: 41.21, dosis_sug: null, stock: 105 }
+  ],
+  "Coadyuvantes": [
+    { producto: "DASH MSO BASF X 5 LT", presentacion: 5, unidad: "L", formulacion: "", proveedor: "BASF Argentina S.A.", iva_pct: 21, costo_usd: 13.00, margen_pct: 15, precio_usd: 15.00, dosis_sug: null, stock: 0 }
+  ]
+};
+
+const FINANCIACION_FALLBACK = [
+  { plazo: "contado", label: "Contado", recargo_pct: 0 },
+  { plazo: "mayo2026", label: "Mayo 2026", recargo_pct: 2 },
+  { plazo: "dic2026", label: "Dic 2026", recargo_pct: 6 }
+];
+
+/* ── Estado ── */
+let catalogo = CATALOGO_FALLBACK;
+let financiacion = FINANCIACION_FALLBACK;
+let rows = [];
+let rowId = 0;
+let plazoActual = 'contado';
+let prodSeleccionado = null;
+let highlightIdx = -1;
+let ddItems = [];
+
+/* ── Calc ── */
+const Calc = {
+  recargo(plazo) {
+    const f = financiacion.find(f => f.plazo === plazo);
+    return f ? f.recargo_pct : 0;
+  },
+  precioConRecargo(precio, plazo) {
+    return precio * (1 + Calc.recargo(plazo) / 100);
+  },
+  costoHa(precio, dosis, plazo) {
+    return Calc.precioConRecargo(precio, plazo) * dosis;
+  }
+};
+
+/* ══════════════════════════════════════════
+   API_URL — Pegá acá la URL de tu Apps Script deploy
+   Dejala vacía para usar datos fallback locales
+   ══════════════════════════════════════════ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyoK9r8Scj6WBhl_XUUiAU_kcpTVtGKSlDH9WHmVlRGNo-jt-QbLqlg5BNY5RGAhHV8kw/exec';
+
+/* ── Market (conexión a Sheets) ── */
+const Market = {
+  online: false,
+
+  async init() {
+    if (!API_URL) {
+      Market.setStatus(false, 'Offline — datos locales');
+      return;
+    }
+    Market.setStatus(null, 'Conectando...');
+    try {
+      // Cargar catálogo y financiación en paralelo
+      const [catRes, finRes] = await Promise.all([
+        Market.fetch('getCatalogoAgro'),
+        Market.fetch('getFinanciacionAgro')
+      ]);
+
+      console.log('Respuesta catálogo:', JSON.stringify(catRes).substring(0, 500));
+      console.log('Respuesta financiación:', JSON.stringify(finRes).substring(0, 500));
+
+      if (catRes.ok && catRes.catalogo) {
+        catalogo = catRes.catalogo;
+        var totalProds = Object.values(catalogo).reduce(function(s, arr) { return s + arr.length; }, 0);
+        console.log('Catálogo cargado:', Object.keys(catalogo).length, 'categorías,', totalProds, 'productos');
+        Market.setStatus(true, 'Sheets — ' + totalProds + ' productos');
+      } else {
+        console.error('Catálogo no cargó:', catRes.error || 'sin campo catalogo');
+        Market.setStatus(false, 'Error catálogo — datos locales');
+      }
+
+      if (finRes.ok && finRes.financiacion) {
+        financiacion = finRes.financiacion;
+        App.renderPlazos();
+      }
+      App.renderRef();
+      App.renderLista(plazoActual);
+    } catch (err) {
+      console.error('Market.init error:', err);
+      Market.setStatus(false, 'Error — usando datos locales');
+    }
+  },
+
+  async fetch(action) {
+    const res = await fetch(API_URL + '?action=' + action);
+    return res.json();
+  },
+
+  async post(data) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  async registrarCotizacion() {
+    if (!API_URL) return null;
+    try {
+      const fin = financiacion.find(f => f.plazo === plazoActual);
+      const data = {
+        action: 'registrarAgro',
+        vendedor: $('vendedor').value,
+        cliente: $('cliente').value,
+        localidad: $('localidad').value,
+        hectareas: parseFloat($('hectareas').value) || 0,
+        plazo: fin ? fin.label : 'Contado',
+        recargo_pct: fin ? fin.recargo_pct : 0,
+        lineas: rows.map(r => ({
+          categoria: r.cat,
+          producto: r.producto,
+          unidad: r.unidad,
+          precio: r.precio,
+          dosis: r.dosis,
+          iva_pct: r.iva_pct
+        }))
+      };
+      return await Market.post(data);
+    } catch (err) {
+      console.error('Registrar error:', err);
+      return null;
+    }
+  },
+
+  setStatus(online, text) {
+    Market.online = online;
+    const dot = $('status-dot');
+    dot.classList.remove('on');
+    if (online === true) dot.classList.add('on');
+    if (online === null) dot.style.background = 'var(--accent)'; // connecting
+    else dot.style.background = '';
+    $('status-text').textContent = text;
+  }
+};
+
+/* ── Historial ── */
+const Historial = {
+  items: JSON.parse(localStorage.getItem('historial') || '[]'),
+  render() {
+    const body = $('hist-body');
+    if (!Historial.items.length) {
+      body.innerHTML = `<div class="hist-empty"><p style="font-size:32px; margin-bottom:8px;">&#128203;</p><p>Sin cotizaciones</p></div>`;
+      return;
+    }
+    body.innerHTML = Historial.items.map(h => `
+      <div class="card" style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--accent);">#${h.id}</span>
+          <span style="font-size:12px; color:var(--text-mut);">${h.fecha}</span>
+        </div>
+        <div style="font-weight:700; font-size:14px;">${h.cliente || 'Sin nombre'}</div>
+        <div style="font-size:12px; color:var(--text-sec);">${h.items} productos — USD ${h.total}/ha</div>
+      </div>`).join('');
+  },
+  guardar(cliente, items, total) {
+    Historial.items.unshift({ id: Historial.items.length + 1, fecha: dateStr(), cliente, items, total });
+    localStorage.setItem('historial', JSON.stringify(Historial.items.slice(0, 50)));
+    Historial.render();
+  }
+};
+
+/* ══════════════════════════════════════
+   APP
+   ══════════════════════════════════════ */
+const App = {
+  init() {
+    const sel = $('vendedor');
+    const saved = localStorage.getItem('vendedor');
+    if (saved) sel.value = saved;
+    sel.addEventListener('change', () => localStorage.setItem('vendedor', sel.value));
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        $('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.search-wrap')) App.hideDropdown();
+    });
+
+    $('search').addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); App.moveHighlight(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); App.moveHighlight(-1); }
+      else if (e.key === 'Enter' && highlightIdx >= 0) { e.preventDefault(); App.selectFromDropdown(highlightIdx); }
+      else if (e.key === 'Escape') App.hideDropdown();
+    });
+
+    // Live calc en add form
+    $('af-precio').addEventListener('input', App.calcAddPreview);
+    $('af-dosis').addEventListener('input', App.calcAddPreview);
+    $('af-dosis').addEventListener('keydown', e => { if (e.key === 'Enter') App.confirmarAdd(); });
+
+    Market.init();
+    Historial.render();
+    App.renderRef();
+    App.renderLista('contado');
+  },
+
+  /* ── Render plazos dinámicos (si vienen de Sheets) ── */
+  renderPlazos() {
+    const bars = document.querySelectorAll('.plazo-bar');
+    bars.forEach(bar => {
+      bar.innerHTML = financiacion.map((f, i) => {
+        const active = f.plazo === plazoActual ? ' active' : '';
+        const small = f.recargo_pct > 0 ? `<small>+${f.recargo_pct}%</small>` : '<small>0%</small>';
+        const handler = bar.closest('#tab-cotizar') ? `App.setPlazo(this)` : `App.setListaPlazo(this)`;
+        return `<button class="plazo-chip${active}" data-plazo="${f.plazo}" onclick="${handler}">${f.label} ${small}</button>`;
+      }).join('');
+    });
+  },
+
+  /* ── Ref panel toggle (mobile) ── */
+  toggleRef() {
+    const p = $('ref-panel');
+    const isOpen = p.classList.toggle('open');
+    $('ref-toggle').textContent = isOpen ? 'Ocultar tabla de referencia' : 'Ver tabla de precios de referencia';
+  },
+
+  /* ── Render tabla de referencia ── */
+  renderRef() {
+    const q = ($('ref-filter')?.value || '').toLowerCase().trim();
+    let html = '';
+
+    Object.entries(catalogo).forEach(([cat, prods]) => {
+      const filtered = prods.filter(p =>
+        !q ||
+        p.producto.toLowerCase().includes(q) ||
+        cat.toLowerCase().includes(q) ||
+        (p.formulacion && p.formulacion.toLowerCase().includes(q)) ||
+        (p.proveedor && p.proveedor.toLowerCase().includes(q))
+      );
+      if (!filtered.length) return;
+      html += `<tr class="cat-row"><td colspan="7">${cat}</td></tr>`;
+      filtered.forEach(p => {
+        const stockClass = p.stock > 0 ? 'color:var(--green)' : 'color:var(--text-mut)';
+        html += `<tr>
+          <td class="prod-name">${p.producto}</td>
+          <td class="droga">${p.formulacion || '—'}</td>
+          <td class="prov">${(p.proveedor || '').replace(/ S\.A\.?/g, '')}</td>
+          <td class="num precio-col">$${fmt(p.precio_usd)}</td>
+          <td class="num">${p.presentacion || '—'}</td>
+          <td class="num">${p.margen_pct || 0}%</td>
+          <td class="num" style="${stockClass}">${p.stock || 0}</td>
+        </tr>`;
+      });
+    });
+
+    $('ref-tbody').innerHTML = html;
+  },
+
+  /* ── Plazo ── */
+  setPlazo(el) {
+    document.querySelectorAll('#tab-cotizar .plazo-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    plazoActual = el.dataset.plazo;
+    App.renderRows();
+  },
+
+  /* ── Dropdown ── */
+  showDropdown() {
+    App.filterDropdown();
+    $('dropdown').classList.add('show');
+    $('add-area').classList.add('active');
+  },
+  hideDropdown() {
+    $('dropdown').classList.remove('show');
+    $('add-area').classList.remove('active');
+    highlightIdx = -1;
+  },
+  filterDropdown() {
+    const q = $('search').value.toLowerCase().trim();
+    let html = '';
+    ddItems = [];
+    Object.entries(catalogo).forEach(([cat, prods]) => {
+      const filtered = prods.filter(p =>
+        p.producto.toLowerCase().includes(q) ||
+        cat.toLowerCase().includes(q) ||
+        (p.formulacion && p.formulacion.toLowerCase().includes(q)) ||
+        (p.proveedor && p.proveedor.toLowerCase().includes(q))
+      );
+      if (!filtered.length) return;
+      html += `<div class="dd-cat">${cat}</div>`;
+      filtered.forEach(p => {
+        const idx = ddItems.length;
+        ddItems.push({ ...p, cat });
+        const stockTxt = p.stock > 0 ? `<span style="color:var(--green);">stk:${p.stock}</span>` : '<span style="color:var(--text-mut);">s/stk</span>';
+        html += `<div class="dd-item" onclick="App.selectFromDropdown(${idx})">
+          <div>
+            <span style="font-weight:600;">${p.producto}</span>
+            <span style="font-size:10px; color:var(--text-mut);"> · ${(p.proveedor||'').replace(/ S\.A\.?/g,'')}</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="dd-item-price">$${fmt(p.precio_usd)}/${p.unidad}</div>
+            <div style="font-size:10px;">${stockTxt}</div>
+          </div>
+        </div>`;
+      });
+    });
+    if (!html) html = '<div style="padding:12px; color:var(--text-mut); font-size:13px;">Sin resultados</div>';
+    $('dropdown').innerHTML = html;
+    highlightIdx = -1;
+  },
+  moveHighlight(dir) {
+    if (!ddItems.length) return;
+    highlightIdx = Math.max(0, Math.min(ddItems.length - 1, highlightIdx + dir));
+    $('dropdown').querySelectorAll('.dd-item').forEach((el, i) => el.classList.toggle('highlighted', i === highlightIdx));
+    const el = $('dropdown').querySelector('.dd-item.highlighted');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  },
+
+  selectFromDropdown(idx) {
+    const p = ddItems[idx];
+    if (!p) return;
+    prodSeleccionado = p;
+    App.hideDropdown();
+    $('search').value = '';
+
+    $('add-form').classList.add('show');
+    $('af-name').textContent = p.producto;
+    let info = `${p.cat} · ${(p.proveedor||'').replace(/ S\.A\.?/g,'')}`;
+    if (p.formulacion) info += ` · ${p.formulacion}`;
+    if (p.presentacion) info += ` · Pres: ${p.presentacion}${p.unidad}`;
+    if (p.stock > 0) info += ` · Stock: ${p.stock}`;
+    $('af-info').textContent = info;
+    $('af-precio').value = p.precio_usd;
+    $('af-dosis').value = p.dosis_sug || '';
+    App.calcAddPreview();
+    $('af-dosis').focus();
+    $('af-dosis').select();
+  },
+
+  calcAddPreview() {
+    const precio = parseFloat($('af-precio').value) || 0;
+    const dosis = parseFloat($('af-dosis').value) || 0;
+    const costoHa = precio * dosis;
+    $('af-costoha').textContent = costoHa > 0 ? '$' + fmt(costoHa) : '—';
+  },
+
+  confirmarAdd() {
+    if (!prodSeleccionado) return;
+    const precio = parseFloat($('af-precio').value);
+    const dosis = parseFloat($('af-dosis').value);
+    if (!precio || precio <= 0 || !dosis || dosis <= 0) {
+      $('af-dosis').focus();
+      return;
+    }
+
+    rowId++;
+    rows.push({
+      id: rowId,
+      producto: prodSeleccionado.producto,
+      cat: prodSeleccionado.cat,
+      precio,
+      unidad: prodSeleccionado.unidad,
+      dosis,
+      iva_pct: prodSeleccionado.iva_pct,
+      proveedor: prodSeleccionado.proveedor || ''
+    });
+
+    prodSeleccionado = null;
+    $('add-form').classList.remove('show');
+    $('search').value = '';
+    App.renderRows();
+    $('search').focus();
+  },
+
+  renderRows() {
+    const container = $('rows');
+    const has = parseFloat($('hectareas').value) || 0;
+
+    if (!rows.length) {
+      container.innerHTML = '';
+      $('totales').style.display = 'none';
+      $('wa-bar').style.display = 'none';
+      return;
+    }
+
+    let netoHa = 0, ivaHa = 0;
+
+    container.innerHTML = rows.map(r => {
+      const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+      const costoHa = precioP * r.dosis;
+      const totalItem = has > 0 ? costoHa * has : null;
+      netoHa += costoHa;
+      ivaHa += costoHa * (r.iva_pct / 100);
+      return `<div class="row-item">
+        <div class="row-prod">
+          <span class="row-prod-name">${r.producto}</span>
+          <span class="row-prod-meta">${r.cat} · ${r.proveedor}</span>
+        </div>
+        <span class="row-val">$${fmt(precioP)}</span>
+        <span class="row-val">${r.dosis}</span>
+        <span class="row-val costo">${fmt(costoHa)}</span>
+        <span class="row-val">${totalItem ? fmt(totalItem) : '—'}</span>
+        <button class="row-rm" onclick="App.removeRow(${r.id})">&times;</button>
+      </div>`;
+    }).join('');
+
+    $('totales').style.display = 'block';
+    $('t-neto').textContent = 'USD ' + fmt(netoHa);
+    $('t-iva').textContent = 'USD ' + fmt(ivaHa);
+    $('t-total').textContent = 'USD ' + fmt(netoHa + ivaHa);
+
+    if (has > 0) {
+      $('t-total-has-row').style.display = 'flex';
+      $('t-has-label').textContent = has;
+      $('t-total-has').textContent = 'USD ' + fmt((netoHa + ivaHa) * has);
+    } else {
+      $('t-total-has-row').style.display = 'none';
+    }
+
+    $('wa-bar').style.display = 'flex';
+  },
+
+  removeRow(id) {
+    rows = rows.filter(r => r.id !== id);
+    App.renderRows();
+  },
+
+  /* ── WhatsApp ── */
+  generarTexto() {
+    const vendedor = $('vendedor').value || '—';
+    const cliente = $('cliente').value || '';
+    const localidad = $('localidad').value || '';
+    const has = parseFloat($('hectareas').value) || 0;
+    const fin = FINANCIACION.find(f => f.plazo === plazoActual);
+    const plazoLabel = fin ? fin.label : 'Contado';
+
+    let txt = `*HENDERSEEDS — Cotización*\n`;
+    txt += dateStr();
+    if (vendedor !== '—') txt += ` · ${vendedor}`;
+    txt += `\n`;
+    if (cliente) txt += `Cliente: ${cliente}`;
+    if (localidad) txt += ` — ${localidad}`;
+    if (cliente || localidad) txt += `\n`;
+    if (has > 0) txt += `Superficie: ${has} has\n`;
+    txt += `Condición: *${plazoLabel}*\n`;
+    txt += `─────────────────\n`;
+
+    let totalHa = 0;
+    const grupos = {};
+    rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
+
+    Object.entries(grupos).forEach(([cat, items]) => {
+      txt += `\n*${cat.toUpperCase()}*\n`;
+      items.forEach(r => {
+        const costoHa = Calc.costoHa(r.precio, r.dosis, plazoActual);
+        totalHa += costoHa;
+        txt += `▸ ${r.producto}\n`;
+        txt += `   ${r.dosis} ${r.unidad}/ha × $${fmt(Calc.precioConRecargo(r.precio, plazoActual))}/${r.unidad} = *USD ${fmt(costoHa)}/ha*\n`;
+      });
+    });
+
+    txt += `\n─────────────────\n`;
+    txt += `*TOTAL: USD ${fmt(totalHa)}/ha*`;
+    if (has > 0) txt += `\n*${has} has = USD ${fmt(totalHa * has)}*`;
+    txt += `\n+ IVA según categoría\n`;
+    txt += `\nPrecios sujetos a cambio sin previo aviso.\nHenderseeds SRL`;
+
+    return txt;
+  },
+
+  enviarWA() {
+    if (!rows.length) return;
+    $('wa-msg').textContent = App.generarTexto();
+    $('wa-preview').classList.add('show');
+  },
+  abrirWA() {
+    window.open('https://wa.me/?text=' + encodeURIComponent(App.generarTexto()), '_blank');
+    App.guardarHistorial();
+    App.cerrarPreview(null, true);
+  },
+  copiarTexto() {
+    navigator.clipboard.writeText(App.generarTexto()).then(() => {
+      const btn = document.querySelector('#wa-bar .btn-outline');
+      btn.textContent = 'Copiado!';
+      setTimeout(() => btn.textContent = 'Copiar', 1500);
+    });
+    App.guardarHistorial();
+  },
+  copiarYCerrar() {
+    navigator.clipboard.writeText(App.generarTexto()).then(() => App.cerrarPreview(null, true));
+    App.guardarHistorial();
+  },
+  cerrarPreview(e, force) {
+    if (force || (e && e.target === $('wa-preview'))) $('wa-preview').classList.remove('show');
+  },
+  async guardarHistorial() {
+    let t = 0;
+    rows.forEach(r => { t += Calc.costoHa(r.precio, r.dosis, plazoActual); });
+    Historial.guardar($('cliente').value, rows.length, fmt(t));
+    // Registrar en Sheets si está conectado
+    const result = await Market.registrarCotizacion();
+    if (result && result.ok) {
+      console.log('Cotización #' + result.numero + ' registrada en Sheets');
+    }
+  },
+
+  /* ── Lista ── */
+  setListaPlazo(el) {
+    document.querySelectorAll('#tab-lista .plazo-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    App.renderLista(el.dataset.plazo);
+  },
+  renderLista(plazo) {
+    let html = '';
+    Object.entries(catalogo).forEach(([cat, prods]) => {
+      html += `<div class="lista-cat">${cat}</div>`;
+      prods.forEach(p => {
+        const precio = Calc.precioConRecargo(p.precio_usd, plazo);
+        html += `<div class="lista-row">
+          <div><div class="lista-name">${p.producto}</div><div class="lista-unit">${p.proveedor} · ${p.unidad}</div></div>
+          <span class="lista-price">$${fmt(precio)}/${p.unidad}</span>
+        </div>`;
+      });
+    });
+    $('lista-body').innerHTML = html;
+  }
+};
+
+document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>

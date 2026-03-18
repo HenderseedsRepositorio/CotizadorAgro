@@ -156,9 +156,14 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 
 /* ── Filas de cotización ── */
+.rows-scroll {
+  overflow-x: auto;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
 .rows-header {
   display: grid;
-  grid-template-columns: 1fr 60px 55px 55px 60px 26px;
+  grid-template-columns: 55px 40px 55px 1fr 60px 55px 55px 60px 26px;
   gap: 4px;
   padding: 6px 10px;
   font-size: 10px;
@@ -166,10 +171,11 @@ input, select, button { font-family: inherit; font-size: inherit; }
   color: var(--text-sec);
   text-transform: uppercase;
   letter-spacing: .3px;
+  min-width: 580px;
 }
 .row-item {
   display: grid;
-  grid-template-columns: 1fr 60px 55px 55px 60px 26px;
+  grid-template-columns: 55px 40px 55px 1fr 60px 55px 55px 60px 26px;
   gap: 4px;
   align-items: center;
   background: var(--card);
@@ -179,7 +185,16 @@ input, select, button { font-family: inherit; font-size: inherit; }
   margin-bottom: 5px;
   box-shadow: var(--shadow);
   animation: slideIn .2s ease;
+  min-width: 580px;
 }
+.row-soporte {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-mut);
+  text-align: right;
+}
+.row-soporte.costo-int { color: #be185d; }
+.row-soporte.margen-int { color: var(--text-sec); }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -603,16 +618,21 @@ input, select, button { font-family: inherit; font-size: inherit; }
           <button class="plazo-chip" data-plazo="dic2026" onclick="App.setPlazo(this)">Dic 26 <small>+6%</small></button>
         </div>
 
-        <div class="rows-header">
-          <span>Producto</span>
-          <span style="text-align:right">$/ud</span>
-          <span style="text-align:right">Dosis</span>
-          <span style="text-align:right">$/ha</span>
-          <span style="text-align:right">Total</span>
-          <span></span>
-        </div>
+        <div class="rows-scroll">
+          <div class="rows-header">
+            <span style="text-align:right; color:var(--text-mut);">Costo</span>
+            <span style="text-align:right; color:var(--text-mut);">Mrg%</span>
+            <span style="text-align:right; color:var(--text-mut);">P.Mrg</span>
+            <span>Producto</span>
+            <span style="text-align:right">$/ud</span>
+            <span style="text-align:right">Dosis</span>
+            <span style="text-align:right">$/ha</span>
+            <span style="text-align:right">Total</span>
+            <span></span>
+          </div>
 
-        <div id="rows"></div>
+          <div id="rows"></div>
+        </div>
 
         <!-- Agregar producto -->
         <div class="add-area" id="add-area">
@@ -1147,7 +1167,10 @@ const App = {
       unidad: prodSeleccionado.unidad,
       dosis,
       iva_pct: prodSeleccionado.iva_pct,
-      proveedor: prodSeleccionado.proveedor || ''
+      proveedor: prodSeleccionado.proveedor || '',
+      costo_usd: prodSeleccionado.costo_usd || 0,
+      margen_pct: prodSeleccionado.margen_pct || 0,
+      precio_margen: prodSeleccionado.precio_usd || 0
     });
 
     prodSeleccionado = null;
@@ -1177,9 +1200,12 @@ const App = {
       netoHa += costoHa;
       ivaHa += costoHa * (r.iva_pct / 100);
       return `<div class="row-item">
+        <span class="row-soporte costo-int">$${fmt(r.costo_usd)}</span>
+        <span class="row-soporte margen-int">${r.margen_pct}%</span>
+        <span class="row-soporte">$${fmt(r.precio_margen)}</span>
         <div class="row-prod">
           <span class="row-prod-name">${r.producto}</span>
-          <span class="row-prod-meta">${r.cat} · ${r.proveedor}</span>
+          <span class="row-prod-meta">${r.cat} · ${(r.proveedor||'').replace(/ S\\.A\\.?/g,'')}</span>
         </div>
         <span class="row-val">$${fmt(precioP)}</span>
         <span class="row-val">${r.dosis}</span>

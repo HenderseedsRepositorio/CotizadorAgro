@@ -772,8 +772,9 @@ input, select, button { font-family: inherit; font-size: inherit; }
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
   <button class="btn btn-accent" id="btn-registrar" onclick="App.registrarCotizacion()">Registrar</button>
-  <button class="btn btn-green" onclick="App.compartirPDF()">Compartir PDF</button>
-  <button class="btn btn-outline" onclick="App.enviarWA()">WA texto</button>
+  <button class="btn btn-green" onclick="App.compartirPDF()">PDF</button>
+  <button class="btn btn-green" style="background:var(--green);" onclick="App.enviarWA('cotizacion')">WA Cotización</button>
+  <button class="btn btn-outline" onclick="App.enviarWA('receta')">WA Receta</button>
 </div>
 
 <!-- WA preview -->
@@ -1221,7 +1222,9 @@ const App = {
       proveedor: prodSeleccionado.proveedor || '',
       costo_usd: prodSeleccionado.costo_usd || 0,
       margen_pct: prodSeleccionado.margen_pct || 0,
-      precio_margen: prodSeleccionado.precio_usd || 0
+      precio_margen: prodSeleccionado.precio_usd || 0,
+      formulacion: prodSeleccionado.formulacion || '',
+      presentacion: prodSeleccionado.presentacion || 0
     });
 
     prodSeleccionado = null;
@@ -1340,7 +1343,7 @@ const App = {
   },
 
   /* ── WhatsApp ── */
-  generarTexto() {
+  generarTextoCotizacion() {
     const vendedor = $('vendedor').value || '—';
     const cliente = $('cliente').value || '';
     const has = parseFloat($('hectareas').value) || 0;
@@ -1363,40 +1366,78 @@ const App = {
     Object.entries(grupos).forEach(([cat, items]) => {
       txt += `\n*${cat.toUpperCase()}*\n`;
       items.forEach(r => {
-        const costoHa = Calc.costoHa(r.precio, r.dosis, plazoActual);
+        const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+        const costoHa = precioP * r.dosis;
+        const vol = has > 0 ? r.dosis * has : null;
+        const monto = has > 0 ? precioP * r.dosis * has : null;
         totalHa += costoHa;
-        txt += `▸ ${r.producto}\n`;
-        txt += `   ${r.dosis} ${r.unidad}/ha × $${fmt(Calc.precioConRecargo(r.precio, plazoActual))}/${r.unidad} = *USD ${fmt(costoHa)}/ha*\n`;
+        txt += `▸ *${r.producto}*\n`;
+        txt += `   Dosis: ${r.dosis} ${r.unidad}/ha`;
+        if (vol) txt += ` · Vol: ${fmt(vol)} ${r.unidad}`;
+        txt += `\n`;
+        txt += `   Precio: $${fmt(precioP)}/${r.unidad}`;
+        if (monto) txt += ` · *Monto: USD ${fmt(monto)}*`;
+        txt += `\n`;
       });
     });
 
     txt += `\n─────────────────\n`;
-    txt += `*TOTAL: USD ${fmt(totalHa)}/ha*`;
-    if (has > 0) txt += `\n*${has} has = USD ${fmt(totalHa * has)}*`;
-    txt += `\n+ IVA según categoría\n`;
-    txt += `\nPrecios sujetos a cambio sin previo aviso.\nHenderseeds SRL`;
+    txt += `*TOTAL/ha: USD ${fmt(totalHa)}*`;
+    if (has > 0) txt += ` + IVA\n*TOTAL ${has} has: USD ${fmt(totalHa * has)}* + IVA`;
+    txt += `\n\nPrecios en USD. Sujetos a cambio sin previo aviso.\nHenderseeds SRL`;
 
     return txt;
   },
 
-  enviarWA() {
+  generarTextoReceta() {
+    const cliente = $('cliente').value || '';
+    const has = parseFloat($('hectareas').value) || 0;
+
+    let txt = `*HENDERSEEDS — Receta*\n`;
+    txt += dateStr() + `\n`;
+    if (cliente) txt += `Cliente: ${cliente}\n`;
+    if (has > 0) txt += `Superficie: ${has} has\n`;
+    txt += `─────────────────\n`;
+
+    const grupos = {};
+    rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
+
+    Object.entries(grupos).forEach(([cat, items]) => {
+      txt += `\n*${cat.toUpperCase()}*\n`;
+      items.forEach(r => {
+        const vol = has > 0 ? r.dosis * has : null;
+        txt += `▸ *${r.producto}*`;
+        if (r.formulacion) txt += ` (${r.formulacion})`;
+        txt += `\n`;
+        txt += `   Dosis: ${r.dosis} ${r.unidad}/ha`;
+        if (vol) txt += ` · Vol: *${fmt(vol)} ${r.unidad}*`;
+        txt += `\n`;
+      });
+    });
+
+    txt += `\n─────────────────\n`;
+    txt += `Henderseeds SRL`;
+
+    return txt;
+  },
+
+  _waMode: 'cotizacion',
+
+  enviarWA(modo) {
     if (!rows.length) return;
-    $('wa-msg').textContent = App.generarTexto();
+    App._waMode = modo || 'cotizacion';
+    const txt = modo === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
+    $('wa-msg').textContent = txt;
     $('wa-preview').classList.add('show');
   },
   abrirWA() {
-    window.open('https://wa.me/?text=' + encodeURIComponent(App.generarTexto()), '_blank');
+    const txt = App._waMode === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
     App.cerrarPreview(null, true);
   },
-  copiarTexto() {
-    navigator.clipboard.writeText(App.generarTexto()).then(() => {
-      const btn = document.querySelector('#wa-bar .btn-outline');
-      btn.textContent = 'Copiado!';
-      setTimeout(() => btn.textContent = 'Copiar', 1500);
-    });
-  },
   copiarYCerrar() {
-    navigator.clipboard.writeText(App.generarTexto()).then(() => App.cerrarPreview(null, true));
+    const txt = App._waMode === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
+    navigator.clipboard.writeText(txt).then(() => App.cerrarPreview(null, true));
   },
   cerrarPreview(e, force) {
     if (force || (e && e.target === $('wa-preview'))) $('wa-preview').classList.remove('show');

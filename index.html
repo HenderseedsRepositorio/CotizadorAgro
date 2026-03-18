@@ -831,13 +831,11 @@ const Market = {
 
       if (finRes.ok && finRes.financiacion) {
         financiacion = finRes.financiacion;
-        App.renderPlazos();
       }
       if (cliRes.ok && cliRes.clientes) {
         clientes = cliRes.clientes;
         console.log('Clientes cargados:', clientes.length);
       }
-      App.renderRef();
       App.renderLista(plazoActual);
     } catch (err) {
       console.error('Market.init error:', err);
@@ -1126,7 +1124,6 @@ const App = {
 
 
     Market.init();
-    App.renderRef();
     App.renderLista('contado');
   },
 

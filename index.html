@@ -180,7 +180,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
   box-shadow: var(--shadow);
   animation: slideIn .2s ease;
 }
-.row-precio-inp {
+.row-inp {
   width: 100%;
   padding: 3px 4px;
   border: 1px solid var(--border);
@@ -193,7 +193,34 @@ input, select, button { font-family: inherit; font-size: inherit; }
   background: white;
   outline: none;
 }
-.row-precio-inp:focus { border-color: var(--accent); background: var(--accent-bg); }
+.row-inp:focus { border-color: var(--accent); background: var(--accent-bg); }
+/* Fila nueva (buscador inline) */
+.row-new {
+  display: grid;
+  grid-template-columns: 1fr 68px 52px 58px 62px 68px 24px;
+  gap: 6px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 5px;
+}
+.row-new-search {
+  position: relative;
+}
+.row-new-search input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: var(--font);
+  outline: none;
+  background: white;
+}
+.row-new-search input:focus { border-color: var(--accent); }
+.row-new-search input::placeholder { color: var(--text-mut); }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -226,27 +253,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .row-rm:hover { color: var(--red); }
 
-/* ── Agregar producto ── */
-.add-area {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  margin-bottom: 10px;
-}
-.add-area.active { border-color: var(--accent); background: var(--card); }
-.search-wrap { position: relative; }
-.search-inp {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background: white;
-  outline: none;
-}
-.search-inp:focus { border-color: var(--accent); }
-.search-inp::placeholder { color: var(--text-mut); }
+/* ── Dropdown ── */
 .dropdown {
   position: absolute;
   top: 100%;
@@ -291,35 +298,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 .cliente-dd .dd-item { font-size: 13px; padding: 6px 12px; }
 .cliente-dd .dd-add { color: var(--accent); font-weight: 700; font-size: 12px; }
-
-/* ── Inline add form ── */
-.add-form {
-  display: none;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-.add-form.show { display: block; }
-.add-form-prod {
-  font-weight: 700;
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-.add-form-info {
-  font-size: 12px;
-  color: var(--text-sec);
-  margin-bottom: 8px;
-}
-.add-form-info span {
-  font-family: var(--mono);
-  color: var(--accent);
-}
-.add-form-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 8px;
-  align-items: end;
-}
 
 /* ── Plazo ── */
 .plazo-bar {
@@ -609,7 +587,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
             <div>
               <div class="form-lbl">Hectáreas</div>
               <input id="hectareas" type="number" class="inp inp-sm" placeholder="Has" min="1" value=""
-                oninput="App.renderRows(); App.calcAddPreview()">
+                oninput="App.renderRows()">
             </div>
           </div>
         </div>
@@ -634,36 +612,19 @@ input, select, button { font-family: inherit; font-size: inherit; }
           <div id="rows"></div>
         </div>
 
-        <!-- Agregar producto -->
-        <div class="add-area" id="add-area">
-          <div class="search-wrap">
-            <input type="text" class="search-inp" id="search" placeholder="Buscar producto..." autocomplete="off"
+        <!-- Fila nueva inline -->
+        <div class="row-new" id="row-new">
+          <div class="row-new-search">
+            <input type="text" id="search" placeholder="+ Agregar producto..." autocomplete="off"
               onfocus="App.showDropdown()" oninput="App.filterDropdown()">
             <div class="dropdown" id="dropdown"></div>
           </div>
-          <div class="add-form" id="add-form">
-            <div class="add-form-prod" id="af-name">—</div>
-            <div class="add-form-info" id="af-info"></div>
-            <div class="add-form-fields">
-              <div>
-                <div class="form-lbl">Precio/ud</div>
-                <input type="number" class="inp inp-sm" id="af-precio" step="0.01" min="0">
-              </div>
-              <div>
-                <div class="form-lbl">Dosis/ha</div>
-                <input type="number" class="inp inp-sm" id="af-dosis" step="0.01" min="0" placeholder="0.5">
-              </div>
-              <div>
-                <div class="form-lbl">$/ha</div>
-                <div id="af-costoha" style="font-family:var(--mono); font-size:14px; font-weight:700; color:var(--accent); padding:7px 0;">—</div>
-              </div>
-              <div>
-                <div class="form-lbl">Vol. total</div>
-                <div id="af-vol" style="font-family:var(--mono); font-size:14px; font-weight:700; color:var(--green); padding:7px 0;">—</div>
-              </div>
-              <button class="btn btn-accent btn-sm" onclick="App.confirmarAdd()">Agregar</button>
-            </div>
-          </div>
+          <span class="row-val" style="color:var(--text-mut);">—</span>
+          <span class="row-val" style="color:var(--text-mut);">—</span>
+          <span class="row-val" style="color:var(--text-mut);">—</span>
+          <span class="row-val" style="color:var(--text-mut);">—</span>
+          <span class="row-val" style="color:var(--text-mut);">—</span>
+          <span></span>
         </div>
 
         <!-- Totales -->
@@ -1153,10 +1114,6 @@ const App = {
       else if (e.key === 'Escape') App.hideDropdown();
     });
 
-    // Live calc en add form
-    $('af-precio').addEventListener('input', App.calcAddPreview);
-    $('af-dosis').addEventListener('input', App.calcAddPreview);
-    $('af-dosis').addEventListener('keydown', e => { if (e.key === 'Enter') App.confirmarAdd(); });
 
     Market.init();
     App.renderRef();
@@ -1285,91 +1242,59 @@ const App = {
   selectFromDropdown(idx) {
     const p = ddItems[idx];
     if (!p) return;
-    prodSeleccionado = p;
     App.hideDropdown();
     $('search').value = '';
-
-    $('add-form').classList.add('show');
-    $('af-name').textContent = p.producto;
-    let info = `${p.cat} · ${(p.proveedor||'').replace(/ S\.A\.?/g,'')}`;
-    if (p.formulacion) info += ` · ${p.formulacion}`;
-    if (p.presentacion) info += ` · Pres: ${p.presentacion}${p.unidad}`;
-    if (p.stock > 0) info += ` · Stock: ${p.stock}`;
-    $('af-info').textContent = info;
-    $('af-precio').value = p.precio_usd;
-    $('af-dosis').value = p.dosis_sug || '';
-    App.calcAddPreview();
-    $('af-dosis').focus();
-    $('af-dosis').select();
-  },
-
-  addManual(nombre) {
-    prodSeleccionado = {
-      producto: nombre,
-      cat: 'Otros',
-      unidad: 'L',
-      iva_pct: 21,
-      proveedor: '',
-      costo_usd: 0,
-      margen_pct: 0,
-      precio_usd: 0,
-      formulacion: '',
-      presentacion: 0
-    };
-    App.hideDropdown();
-    $('search').value = '';
-
-    $('add-form').classList.add('show');
-    $('af-name').textContent = nombre;
-    $('af-info').textContent = 'Producto manual — completá precio y dosis';
-    $('af-precio').value = '';
-    $('af-dosis').value = '';
-    App.calcAddPreview();
-    $('af-precio').focus();
-  },
-
-  calcAddPreview() {
-    const precio = parseFloat($('af-precio').value) || 0;
-    const dosis = parseFloat($('af-dosis').value) || 0;
-    const has = parseFloat($('hectareas').value) || 0;
-    const costoHa = precio * dosis;
-    const vol = dosis * has;
-    $('af-costoha').textContent = costoHa > 0 ? '$' + fmt(costoHa) : '—';
-    const unidad = prodSeleccionado ? prodSeleccionado.unidad : '';
-    $('af-vol').textContent = vol > 0 ? fmt(vol) + ' ' + unidad : '—';
-  },
-
-  confirmarAdd() {
-    if (!prodSeleccionado) return;
-    const precio = parseFloat($('af-precio').value);
-    const dosis = parseFloat($('af-dosis').value);
-    if (!precio || precio <= 0 || !dosis || dosis <= 0) {
-      $('af-dosis').focus();
-      return;
-    }
 
     rowId++;
     rows.push({
       id: rowId,
-      producto: prodSeleccionado.producto,
-      cat: prodSeleccionado.cat,
-      precio,
-      unidad: prodSeleccionado.unidad || 'L',
-      dosis,
-      iva_pct: prodSeleccionado.iva_pct,
-      proveedor: prodSeleccionado.proveedor || '',
-      costo_usd: prodSeleccionado.costo_usd || 0,
-      margen_pct: prodSeleccionado.margen_pct || 0,
-      precio_margen: prodSeleccionado.precio_usd || 0,
-      formulacion: prodSeleccionado.formulacion || '',
-      presentacion: prodSeleccionado.presentacion || 0
+      producto: p.producto,
+      cat: p.cat,
+      precio: p.precio_usd,
+      unidad: p.unidad || 'L',
+      dosis: p.dosis_sug || 1,
+      iva_pct: p.iva_pct,
+      proveedor: p.proveedor || '',
+      costo_usd: p.costo_usd || 0,
+      margen_pct: p.margen_pct || 0,
+      precio_margen: p.precio_usd || 0,
+      formulacion: p.formulacion || '',
+      presentacion: p.presentacion || 0
     });
-
-    prodSeleccionado = null;
-    $('add-form').classList.remove('show');
-    $('search').value = '';
     App.renderRows();
-    $('search').focus();
+    // Focus en dosis de la fila recién agregada
+    setTimeout(() => {
+      const lastRow = document.querySelector(`[data-rowid="${rowId}"]`);
+      if (lastRow) { const inps = lastRow.querySelectorAll('.row-inp'); if (inps[1]) { inps[1].focus(); inps[1].select(); } }
+    }, 50);
+  },
+
+  addManual(nombre) {
+    App.hideDropdown();
+    $('search').value = '';
+
+    rowId++;
+    rows.push({
+      id: rowId,
+      producto: nombre,
+      cat: 'Otros',
+      precio: 0,
+      unidad: 'L',
+      dosis: 1,
+      iva_pct: 21,
+      proveedor: '',
+      costo_usd: 0,
+      margen_pct: 0,
+      precio_margen: 0,
+      formulacion: '',
+      presentacion: 0
+    });
+    App.renderRows();
+    // Focus en precio de la fila recién agregada
+    setTimeout(() => {
+      const lastRow = document.querySelector(`[data-rowid="${rowId}"]`);
+      if (lastRow) { const inps = lastRow.querySelectorAll('.row-inp'); if (inps[0]) { inps[0].focus(); inps[0].select(); } }
+    }, 50);
   },
 
   renderRows() {
@@ -1388,7 +1313,6 @@ const App = {
     container.innerHTML = rows.map(r => {
       const precioP = Calc.precioConRecargo(r.precio, plazoActual);
       const costoHa = precioP * r.dosis;
-      const totalItem = has > 0 ? costoHa * has : null;
       netoHa += costoHa;
       ivaHa += costoHa * (r.iva_pct / 100);
       const volumen = has > 0 ? r.dosis * has : null;
@@ -1398,10 +1322,12 @@ const App = {
           <span class="row-prod-name">${r.producto}</span>
           <span class="row-prod-meta">${(r.proveedor||'').replace(/ S\\.A\\.?/g,'')} · ${r.unidad}</span>
         </div>
-        <input type="number" class="row-precio-inp" value="${r.precio}" step="0.01" min="0"
-          onchange="App.updatePrecio(${r.id}, this.value)"
-          oninput="App.updatePrecio(${r.id}, this.value)">
-        <span class="row-val">${r.dosis}</span>
+        <input type="number" class="row-inp" value="${r.precio}" step="0.01" min="0"
+          onchange="App.updateField(${r.id},'precio',this.value)"
+          oninput="App.updateField(${r.id},'precio',this.value)">
+        <input type="number" class="row-inp" value="${r.dosis}" step="0.01" min="0"
+          onchange="App.updateField(${r.id},'dosis',this.value)"
+          oninput="App.updateField(${r.id},'dosis',this.value)">
         <span class="row-val">${volumen ? fmt(volumen) : '—'}</span>
         <span class="row-val costo">${fmt(costoHa)}</span>
         <span class="row-val">${monto ? fmt(monto) : '—'}</span>
@@ -1425,11 +1351,11 @@ const App = {
     $('wa-bar').style.display = 'flex';
   },
 
-  updatePrecio(id, val) {
+  updateField(id, field, val) {
     const r = rows.find(r => r.id === id);
     if (!r) return;
-    r.precio = parseFloat(val) || 0;
-    // Recalcular totales sin re-render completo (evita perder foco del input)
+    r[field] = parseFloat(val) || 0;
+    // Recalcular sin re-render (evita perder foco del input)
     const has = parseFloat($('hectareas').value) || 0;
     let netoHa = 0, ivaHa = 0;
     rows.forEach(r => {
@@ -1446,12 +1372,10 @@ const App = {
       const volumen = has > 0 ? r.dosis * has : null;
       const monto = has > 0 ? costoHa * has : null;
       const vals = rowEl.querySelectorAll('.row-val');
-      vals[0].textContent = r.dosis;
-      vals[1].textContent = volumen ? fmt(volumen) : '—';
-      vals[2].textContent = fmt(costoHa);
-      vals[3].textContent = monto ? fmt(monto) : '—';
+      vals[0].textContent = volumen ? fmt(volumen) : '—';
+      vals[1].textContent = fmt(costoHa);
+      vals[2].textContent = monto ? fmt(monto) : '—';
     }
-    // Actualizar totales
     $('totales').style.display = 'block';
     $('t-neto').textContent = 'USD ' + fmt(netoHa);
     $('t-iva').textContent = 'USD ' + fmt(ivaHa);

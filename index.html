@@ -618,22 +618,22 @@ input, select, button { font-family: inherit; font-size: inherit; }
       <!-- ── COLUMNA IZQUIERDA: Cotización ── -->
       <div class="col-cotiz">
         <div class="card" style="padding:8px 10px;">
-          <div class="form-row" style="grid-template-columns: 1fr auto;">
+          <div class="form-row-3">
             <div style="position:relative;">
               <div class="form-lbl">Cliente</div>
-              <input id="cliente" type="text" class="inp inp-sm" placeholder="Buscar o agregar..." autocomplete="off"
-                oninput="App.filterClientes()" onfocus="App.filterClientes()">
+              <input id="cliente" type="text" class="inp inp-sm" placeholder="Buscar..." autocomplete="off"
+                oninput="App.filterClientes()" onfocus="App.filterClientes(true)">
               <div class="dropdown cliente-dd" id="cliente-dd"></div>
             </div>
             <div>
+              <div class="form-lbl">Establecimiento</div>
+              <input id="establecimiento" type="text" class="inp inp-sm" placeholder="Campo / Lote">
+            </div>
+            <div>
               <div class="form-lbl">Hectáreas</div>
-              <input id="hectareas" type="number" class="inp inp-sm" placeholder="Has" min="1" value="" style="width:80px;"
+              <input id="hectareas" type="number" class="inp inp-sm" placeholder="Has" min="1" value=""
                 oninput="App.renderRows(); App.calcAddPreview()">
             </div>
-          </div>
-          <div style="margin-top:6px;">
-            <div class="form-lbl">Establecimiento / Lote</div>
-            <input id="establecimiento" type="text" class="inp inp-sm" placeholder="Nombre del campo o lote">
           </div>
         </div>
 
@@ -1605,18 +1605,21 @@ const App = {
   },
 
   /* ── Clientes ── */
-  filterClientes() {
+  filterClientes(showAll) {
     const q = $('cliente').value.trim().toLowerCase();
     const dd = $('cliente-dd');
-    if (!q) { dd.classList.remove('show'); return; }
-    const matches = clientes.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+    if (!clientes.length) { dd.classList.remove('show'); return; }
+    const matches = q
+      ? clientes.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 10)
+      : (showAll ? clientes.slice(0, 15) : []);
+    if (!matches.length && !q) { dd.classList.remove('show'); return; }
     let html = matches.map(c =>
       `<div class="dd-item" onclick="App.selectCliente('${c.nombre.replace(/'/g, "\\'")}')">
         <span>${c.nombre}</span>
-        <span style="font-size:11px;color:var(--text-mut);">${c.localidad || ''}</span>
+        <span style="font-size:11px;color:var(--text-mut);">${c.cuit || ''}</span>
       </div>`
     ).join('');
-    if (!matches.length || !matches.some(c => c.nombre.toLowerCase() === q)) {
+    if (q && (!matches.length || !matches.some(c => c.nombre.toLowerCase() === q))) {
       html += `<div class="dd-item dd-add" onclick="App.addCliente()">+ Agregar "${$('cliente').value.trim()}"</div>`;
     }
     dd.innerHTML = html;

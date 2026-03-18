@@ -309,7 +309,7 @@ function registrarCotizacionAgro(data) {
 
 /* ═══════════════════════════════════════
    GET CLIENTES
-   Lee la hoja "Clientes" (columnas: A=nombre, B=localidad)
+   Lee la hoja "Clientes" (columnas: A=Cliente, B=CUIT)
    ═══════════════════════════════════════ */
 function getClientes() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -322,7 +322,7 @@ function getClientes() {
     if (!data[i][0]) continue;
     clientes.push({
       nombre: data[i][0].toString().trim(),
-      localidad: (data[i][1] || '').toString().trim()
+      cuit: (data[i][1] || '').toString().trim()
     });
   }
   return { ok: true, clientes: clientes };
@@ -337,8 +337,8 @@ function addCliente(data) {
   let sheet = ss.getSheetByName('Clientes');
   if (!sheet) {
     sheet = ss.insertSheet('Clientes');
-    sheet.appendRow(['nombre', 'localidad']);
+    sheet.appendRow(['Cliente', 'CUIT']);
   }
-  sheet.appendRow([data.nombre || '', data.localidad || '']);
+  sheet.appendRow([data.nombre || '', data.cuit || '']);
   return { ok: true };
 }

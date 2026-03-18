@@ -314,6 +314,9 @@ input, select, button { font-family: inherit; font-size: inherit; }
   white-space: nowrap;
 }
 
+.cliente-dd .dd-item { font-size: 13px; padding: 6px 12px; }
+.cliente-dd .dd-add { color: var(--accent); font-weight: 700; font-size: 12px; }
+
 /* ── Inline add form ── */
 .add-form {
   display: none;
@@ -346,23 +349,24 @@ input, select, button { font-family: inherit; font-size: inherit; }
 /* ── Plazo ── */
 .plazo-bar {
   display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 .plazo-chip {
   flex: 1;
-  padding: 7px 6px;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 5px 4px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
   border: 1px solid var(--border);
   background: white;
   cursor: pointer;
   text-align: center;
   transition: all .15s;
+  line-height: 1.2;
 }
 .plazo-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
-.plazo-chip small { display: block; font-weight: 400; font-size: 10px; opacity: .7; }
+.plazo-chip small { display: block; font-weight: 400; font-size: 9px; opacity: .7; }
 
 /* ── Totales ── */
 .totales {
@@ -612,19 +616,17 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
       <!-- ── COLUMNA IZQUIERDA: Cotización ── -->
       <div class="col-cotiz">
-        <div class="card">
-          <div class="form-row-3">
-            <div>
+        <div class="card" style="padding:8px 10px;">
+          <div class="form-row" style="grid-template-columns: 1fr auto;">
+            <div style="position:relative;">
               <div class="form-lbl">Cliente</div>
-              <input id="cliente" type="text" class="inp inp-sm" placeholder="Nombre">
-            </div>
-            <div>
-              <div class="form-lbl">Localidad</div>
-              <input id="localidad" type="text" class="inp inp-sm" placeholder="Localidad">
+              <input id="cliente" type="text" class="inp inp-sm" placeholder="Buscar o agregar..." autocomplete="off"
+                oninput="App.filterClientes()" onfocus="App.filterClientes()">
+              <div class="dropdown cliente-dd" id="cliente-dd"></div>
             </div>
             <div>
               <div class="form-lbl">Hectáreas</div>
-              <input id="hectareas" type="number" class="inp inp-sm" placeholder="Totales" min="1" value=""
+              <input id="hectareas" type="number" class="inp inp-sm" placeholder="Has" min="1" value="" style="width:80px;"
                 oninput="App.renderRows(); App.calcAddPreview()">
             </div>
           </div>
@@ -848,6 +850,7 @@ let plazoActual = 'contado';
 let prodSeleccionado = null;
 let highlightIdx = -1;
 let ddItems = [];
+let clientes = [];
 
 /* ── Calc ── */
 const Calc = {
@@ -881,9 +884,10 @@ const Market = {
     Market.setStatus(null, 'Conectando...');
     try {
       // Cargar catálogo y financiación en paralelo
-      const [catRes, finRes] = await Promise.all([
+      const [catRes, finRes, cliRes] = await Promise.all([
         Market.fetch('getCatalogoAgro'),
-        Market.fetch('getFinanciacionAgro')
+        Market.fetch('getFinanciacionAgro'),
+        Market.fetch('getClientes')
       ]);
 
       console.log('Respuesta catálogo:', JSON.stringify(catRes).substring(0, 500));
@@ -902,6 +906,10 @@ const Market = {
       if (finRes.ok && finRes.financiacion) {
         financiacion = finRes.financiacion;
         App.renderPlazos();
+      }
+      if (cliRes.ok && cliRes.clientes) {
+        clientes = cliRes.clientes;
+        console.log('Clientes cargados:', clientes.length);
       }
       App.renderRef();
       App.renderLista(plazoActual);
@@ -932,7 +940,7 @@ const Market = {
         action: 'registrarAgro',
         vendedor: $('vendedor').value,
         cliente: $('cliente').value,
-        localidad: $('localidad').value,
+        localidad: '',
         hectareas: parseFloat($('hectareas').value) || 0,
         plazo: fin ? fin.label : 'Contado',
         recargo_pct: fin ? fin.recargo_pct : 0,
@@ -1010,6 +1018,7 @@ const App = {
 
     document.addEventListener('click', e => {
       if (!e.target.closest('.search-wrap')) App.hideDropdown();
+      if (!e.target.closest('#cliente') && !e.target.closest('#cliente-dd')) App.hideClienteDD();
     });
 
     $('search').addEventListener('keydown', e => {
@@ -1310,7 +1319,6 @@ const App = {
   generarTexto() {
     const vendedor = $('vendedor').value || '—';
     const cliente = $('cliente').value || '';
-    const localidad = $('localidad').value || '';
     const has = parseFloat($('hectareas').value) || 0;
     const fin = FINANCIACION.find(f => f.plazo === plazoActual);
     const plazoLabel = fin ? fin.label : 'Contado';
@@ -1319,9 +1327,7 @@ const App = {
     txt += dateStr();
     if (vendedor !== '—') txt += ` · ${vendedor}`;
     txt += `\n`;
-    if (cliente) txt += `Cliente: ${cliente}`;
-    if (localidad) txt += ` — ${localidad}`;
-    if (cliente || localidad) txt += `\n`;
+    if (cliente) txt += `Cliente: ${cliente}\n`;
     if (has > 0) txt += `Superficie: ${has} has\n`;
     txt += `Condición: *${plazoLabel}*\n`;
     txt += `─────────────────\n`;
@@ -1382,6 +1388,44 @@ const App = {
     const result = await Market.registrarCotizacion();
     if (result && result.ok) {
       console.log('Cotización #' + result.numero + ' registrada en Sheets');
+    }
+  },
+
+  /* ── Clientes ── */
+  filterClientes() {
+    const q = $('cliente').value.trim().toLowerCase();
+    const dd = $('cliente-dd');
+    if (!q) { dd.classList.remove('show'); return; }
+    const matches = clientes.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+    let html = matches.map(c =>
+      `<div class="dd-item" onclick="App.selectCliente('${c.nombre.replace(/'/g, "\\'")}')">
+        <span>${c.nombre}</span>
+        <span style="font-size:11px;color:var(--text-mut);">${c.localidad || ''}</span>
+      </div>`
+    ).join('');
+    if (!matches.length || !matches.some(c => c.nombre.toLowerCase() === q)) {
+      html += `<div class="dd-item dd-add" onclick="App.addCliente()">+ Agregar "${$('cliente').value.trim()}"</div>`;
+    }
+    dd.innerHTML = html;
+    dd.classList.add('show');
+  },
+  selectCliente(nombre) {
+    $('cliente').value = nombre;
+    $('cliente-dd').classList.remove('show');
+  },
+  hideClienteDD() {
+    $('cliente-dd').classList.remove('show');
+  },
+  async addCliente() {
+    const nombre = $('cliente').value.trim();
+    if (!nombre) return;
+    $('cliente-dd').classList.remove('show');
+    clientes.push({ nombre, localidad: '' });
+    if (API_URL) {
+      try {
+        await Market.post({ action: 'addCliente', nombre });
+        console.log('Cliente agregado a Sheets:', nombre);
+      } catch (err) { console.error('Error agregando cliente:', err); }
     }
   },
 

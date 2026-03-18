@@ -1037,11 +1037,137 @@ const Historial = {
           <span style="font-size:11px; color:var(--text-sec);">Total ${h.hectareas} has</span>
           <span style="font-family:var(--mono); font-size:11px; font-weight:700;">USD ${h.totalHas || '—'}</span>
         </div>` : ''}
+        <div style="display:flex; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid var(--border);">
+          <button class="btn btn-green btn-sm" style="flex:1; font-size:11px; padding:5px 8px;" onclick="Historial.exportar(${Historial.items.indexOf(h)})">Reenviar PDF</button>
+        </div>
       </div>`;
     }).join('');
   },
   async recargar() {
     await Historial.cargar();
+  },
+  async exportar(idx) {
+    const h = Historial.items[idx];
+    if (!h) return;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = 210, margin = 15, contentW = W - margin * 2;
+    let y = 15;
+    const navy = [30, 41, 59], accent = [217, 119, 6], gris = [100, 116, 139];
+
+    // Header
+    const headerH = 20;
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, W, headerH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COTIZACIÓN #' + (h.numero || ''), margin, 10);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(h.fecha + ' · ' + (h.vendedor || '') + '  ·  ' + (h.plazo || ''), margin, 16);
+    if (logoDataUrl) {
+      const logoW = 28, logoH = logoW / 2.51;
+      try { doc.addImage(logoDataUrl, 'PNG', W - margin - logoW, 3, logoW, logoH); } catch(e) {}
+    }
+    y = headerH + 4;
+
+    // Info
+    const infoItems = [];
+    if (h.cliente) infoItems.push(['Cliente:', h.cliente]);
+    if (h.establecimiento) infoItems.push(['Establecimiento:', h.establecimiento]);
+    if (h.hectareas) infoItems.push(['Superficie:', h.hectareas + ' has']);
+    if (infoItems.length) {
+      const boxH = 6 + infoItems.length * 6;
+      doc.setFillColor(254, 243, 199);
+      doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(...navy);
+      infoItems.forEach((item, i) => {
+        const iy = y + 5 + i * 6;
+        doc.setFont('helvetica', 'bold');
+        doc.text(item[0], margin + 4, iy);
+        doc.setFont('helvetica', 'normal');
+        doc.text(item[1], margin + 35, iy);
+      });
+      y += boxH + 4;
+    }
+
+    // Tabla
+    const colC = [margin, margin + 60, margin + 85, margin + 110, margin + 135, margin + 158];
+    doc.setFillColor(...navy);
+    doc.rect(margin, y, contentW, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRODUCTO', colC[0] + 3, y + 5.5);
+    doc.text('DOSIS/HA', colC[1] + 2, y + 5.5);
+    doc.text('VOLUMEN', colC[2] + 2, y + 5.5);
+    doc.text('PRECIO', colC[3] + 2, y + 5.5);
+    doc.text('$/HA', colC[4] + 2, y + 5.5);
+    doc.text('MONTO', colC[5] + 2, y + 5.5);
+    y += 8;
+
+    (h.lineas || []).forEach((l, i) => {
+      if (y > 265) { doc.addPage(); y = 15; }
+      if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
+      doc.setTextColor(...navy);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      const nombre = l.producto.length > 32 ? l.producto.substring(0, 30) + '...' : l.producto;
+      doc.text(nombre, colC[0] + 3, y + 4.5);
+      doc.setFontSize(7.5);
+      doc.text(l.dosis + ' ' + (l.unidad || 'L'), colC[1] + 2, y + 4.5);
+      doc.setTextColor(...gris);
+      doc.text(l.vol || '—', colC[2] + 2, y + 4.5);
+      doc.setTextColor(...navy);
+      doc.text('$' + l.precio, colC[3] + 2, y + 4.5);
+      doc.text('$' + l.costoHa, colC[4] + 2, y + 4.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(l.monto !== '—' ? '$' + l.monto : '—', colC[5] + 2, y + 4.5);
+      y += 7;
+    });
+
+    // Totales
+    y += 3;
+    doc.setFillColor(...navy);
+    doc.rect(margin, y, contentW, h.hectareas ? 22 : 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Total/ha', margin + 4, y + 8);
+    doc.text('USD ' + h.total, W - margin - 4, y + 8, { align: 'right' });
+    if (h.hectareas) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...accent);
+      doc.text('TOTAL ' + h.hectareas + ' has', margin + 4, y + 18);
+      doc.text('USD ' + h.totalHas, W - margin - 4, y + 18, { align: 'right' });
+    }
+    y += (h.hectareas ? 28 : 16);
+
+    // Footer
+    doc.setFontSize(7);
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Precios expresados en USD. Sujetos a cambio sin previo aviso.', margin, y + 4);
+    doc.text('Henderseeds SRL — ' + h.fecha, margin, y + 8);
+
+    // Compartir o descargar
+    const cliente = h.cliente || 'cotizacion';
+    const fileName = 'Henderseeds_Cotizacion_' + (h.numero || '') + '_' + cliente.replace(/\s+/g, '_') + '.pdf';
+    try {
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Cotización #' + h.numero });
+      } else {
+        doc.save(fileName);
+      }
+    } catch(err) {
+      if (err.name !== 'AbortError') doc.save(fileName);
+    }
   }
 };
 

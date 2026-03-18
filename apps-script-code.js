@@ -208,12 +208,14 @@ function getHistorialAgro() {
 
   const rows = data.slice(1).reverse().slice(0, 500);
   const grouped = {};
+  const orden = []; // mantener orden de aparición (más nuevo primero)
 
   rows.forEach(row => {
     const nro = row[0];
     if (!nro) return;
     const has = Number(row[5]) || 0;
     if (!grouped[nro]) {
+      orden.push(nro);
       grouped[nro] = {
         numero: nro,
         fecha: row[1] ? Utilities.formatDate(new Date(row[1]), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy') : '',
@@ -243,8 +245,8 @@ function getHistorialAgro() {
     grouped[nro].total += costoHa;
   });
 
-  // Formatear totales
-  const result = Object.values(grouped);
+  // Mantener orden descendente (más nuevo primero)
+  const result = orden.map(nro => grouped[nro]);
   result.forEach(h => {
     const totalHas = h.hectareas > 0 ? (h.total * h.hectareas).toFixed(2) : '';
     h.total = h.total.toFixed(2);

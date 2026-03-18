@@ -1476,18 +1476,19 @@ const App = {
         });
       });
     } else {
-      // COTIZACIÓN: Producto | Dosis/ha | Vol. | $/ud | Monto
-      const colC = [margin, margin + 70, margin + 100, margin + 130, margin + 155];
+      // COTIZACIÓN: Producto | Dosis/ha | Volumen | Precio | $/ha | Monto
+      const colC = [margin, margin + 60, margin + 85, margin + 110, margin + 135, margin + 158];
       doc.setFillColor(...navy);
       doc.rect(margin, y, contentW, 8, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.text('PRODUCTO', colC[0] + 3, y + 5.5);
       doc.text('DOSIS/HA', colC[1] + 2, y + 5.5);
-      doc.text('VOL.', colC[2] + 2, y + 5.5);
-      doc.text('$/UD', colC[3] + 2, y + 5.5);
-      doc.text('MONTO', colC[4] + 2, y + 5.5);
+      doc.text('VOLUMEN', colC[2] + 2, y + 5.5);
+      doc.text('PRECIO', colC[3] + 2, y + 5.5);
+      doc.text('$/HA', colC[4] + 2, y + 5.5);
+      doc.text('MONTO', colC[5] + 2, y + 5.5);
       y += 8;
 
       let totalHa = 0, totalIvaHa = 0;
@@ -1514,17 +1515,18 @@ const App = {
 
           doc.setTextColor(...navy);
           doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          const nombre = r.producto.length > 36 ? r.producto.substring(0, 34) + '...' : r.producto;
+          doc.setFontSize(7);
+          const nombre = r.producto.length > 32 ? r.producto.substring(0, 30) + '...' : r.producto;
           doc.text(nombre, colC[0] + 3, y + 4.5);
-          doc.setFontSize(8);
+          doc.setFontSize(7.5);
           doc.text(r.dosis + ' ' + r.unidad, colC[1] + 2, y + 4.5);
           doc.setTextColor(...gris);
           doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colC[2] + 2, y + 4.5);
           doc.setTextColor(...navy);
           doc.text('$' + fmt(precioP), colC[3] + 2, y + 4.5);
+          doc.text('$' + fmt(costoHa), colC[4] + 2, y + 4.5);
           doc.setFont('helvetica', 'bold');
-          doc.text(monto ? '$' + fmt(monto) : '—', colC[4] + 2, y + 4.5);
+          doc.text(monto ? '$' + fmt(monto) : '—', colC[5] + 2, y + 4.5);
           y += 7;
         });
       });

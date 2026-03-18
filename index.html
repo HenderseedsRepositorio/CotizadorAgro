@@ -158,7 +158,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .rows-header {
   display: grid;
-  grid-template-columns: 130px 1fr 50px 50px 58px 62px 26px;
+  grid-template-columns: 130px 1fr 62px 50px 50px 58px 62px 26px;
   gap: 4px;
   padding: 6px 10px;
   font-size: 10px;
@@ -169,7 +169,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .row-item {
   display: grid;
-  grid-template-columns: 130px 1fr 50px 50px 58px 62px 26px;
+  grid-template-columns: 130px 1fr 62px 50px 50px 58px 62px 26px;
   gap: 4px;
   align-items: center;
   background: var(--card);
@@ -205,6 +205,20 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .row-sop-val.costo { color: #be185d; }
 .row-sop-val.margen { color: var(--text-sec); }
 .row-sop-val.pmargen { color: var(--accent); font-weight: 600; }
+.row-precio-inp {
+  width: 100%;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--text);
+  background: white;
+  outline: none;
+}
+.row-precio-inp:focus { border-color: var(--accent); background: var(--accent-bg); }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -626,6 +640,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
           <div class="rows-header">
             <span style="color:var(--text-mut);">Soporte</span>
             <span>Producto</span>
+            <span style="text-align:right">Precio</span>
             <span style="text-align:right">Dosis</span>
             <span style="text-align:right">Vol.</span>
             <span style="text-align:right">$/ha</span>
@@ -1203,7 +1218,7 @@ const App = {
       ivaHa += costoHa * (r.iva_pct / 100);
       const volumen = has > 0 ? r.dosis * has : null;
       const monto = has > 0 ? costoHa * has : null;
-      return `<div class="row-item">
+      return `<div class="row-item" data-rowid="${r.id}">
         <div class="row-soporte-block">
           <div class="row-sop"><div class="row-sop-label">Costo</div><div class="row-sop-val costo">$${fmt(r.costo_usd)}</div></div>
           <div class="row-sop"><div class="row-sop-label">Mrg</div><div class="row-sop-val margen">${r.margen_pct}%</div></div>
@@ -1211,8 +1226,11 @@ const App = {
         </div>
         <div class="row-prod">
           <span class="row-prod-name">${r.producto}</span>
-          <span class="row-prod-meta">${(r.proveedor||'').replace(/ S\\.A\\.?/g,'')} · $${fmt(precioP)}/${r.unidad}</span>
+          <span class="row-prod-meta">${(r.proveedor||'').replace(/ S\\.A\\.?/g,'')} · ${r.unidad}</span>
         </div>
+        <input type="number" class="row-precio-inp" value="${r.precio}" step="0.01" min="0"
+          onchange="App.updatePrecio(${r.id}, this.value)"
+          oninput="App.updatePrecio(${r.id}, this.value)">
         <span class="row-val">${r.dosis}</span>
         <span class="row-val">${volumen ? fmt(volumen) : '—'}</span>
         <span class="row-val costo">${fmt(costoHa)}</span>
@@ -1235,6 +1253,44 @@ const App = {
     }
 
     $('wa-bar').style.display = 'flex';
+  },
+
+  updatePrecio(id, val) {
+    const r = rows.find(r => r.id === id);
+    if (!r) return;
+    r.precio = parseFloat(val) || 0;
+    // Recalcular totales sin re-render completo (evita perder foco del input)
+    const has = parseFloat($('hectareas').value) || 0;
+    let netoHa = 0, ivaHa = 0;
+    rows.forEach(r => {
+      const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+      const costoHa = precioP * r.dosis;
+      netoHa += costoHa;
+      ivaHa += costoHa * (r.iva_pct / 100);
+    });
+    // Actualizar celdas de esta fila
+    const rowEl = document.querySelector(`[data-rowid="${id}"]`);
+    if (rowEl) {
+      const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+      const costoHa = precioP * r.dosis;
+      const volumen = has > 0 ? r.dosis * has : null;
+      const monto = has > 0 ? costoHa * has : null;
+      const vals = rowEl.querySelectorAll('.row-val');
+      vals[0].textContent = r.dosis;
+      vals[1].textContent = volumen ? fmt(volumen) : '—';
+      vals[2].textContent = fmt(costoHa);
+      vals[3].textContent = monto ? fmt(monto) : '—';
+    }
+    // Actualizar totales
+    $('totales').style.display = 'block';
+    $('t-neto').textContent = 'USD ' + fmt(netoHa);
+    $('t-iva').textContent = 'USD ' + fmt(ivaHa);
+    $('t-total').textContent = 'USD ' + fmt(netoHa + ivaHa);
+    if (has > 0) {
+      $('t-total-has-row').style.display = 'flex';
+      $('t-has-label').textContent = has;
+      $('t-total-has').textContent = 'USD ' + fmt((netoHa + ivaHa) * has);
+    }
   },
 
   removeRow(id) {

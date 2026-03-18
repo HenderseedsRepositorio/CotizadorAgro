@@ -105,7 +105,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  max-width: 900px;
 }
 
 /* ── Card ── */
@@ -693,36 +692,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
         </div>
       </div>
 
-      <!-- ── Panel de referencia (abajo) ── -->
-      <div>
-        <button class="ref-toggle" id="ref-toggle" onclick="App.toggleRef()" style="display:block;">Ver tabla de precios de referencia</button>
-        <div class="ref-panel" id="ref-panel">
-          <div class="card" style="padding:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <div class="card-title" style="margin:0;">Referencia de precios</div>
-            </div>
-            <div class="ref-filter">
-              <input type="text" class="ref-filter-inp" id="ref-filter" placeholder="Filtrar productos..." oninput="App.renderRef()">
-            </div>
-            <div class="ref-table-wrap">
-              <table class="ref-table" id="ref-table">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Formulación</th>
-                    <th>Prov.</th>
-                    <th class="num">$/ud</th>
-                    <th class="num">Pres.</th>
-                    <th class="num">Margen</th>
-                    <th class="num">Stock</th>
-                  </tr>
-                </thead>
-                <tbody id="ref-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
   </section>
@@ -752,8 +721,8 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
-  <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')">Compartir Cotización</button>
-  <button class="btn btn-outline" onclick="App.compartirPDF('receta')">Compartir Receta</button>
+  <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Compartir Cotización</button>
+  <button class="btn btn-outline" onclick="App.compartirPDF('receta')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Compartir Receta</button>
 </div>
 
 

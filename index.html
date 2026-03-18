@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Cotizador Agroinsumos — Henderseeds</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -771,8 +772,8 @@ input, select, button { font-family: inherit; font-size: inherit; }
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
   <button class="btn btn-accent" id="btn-registrar" onclick="App.registrarCotizacion()">Registrar</button>
-  <button class="btn btn-green" onclick="App.enviarWA()">WhatsApp</button>
-  <button class="btn btn-outline" onclick="App.copiarTexto()">Copiar</button>
+  <button class="btn btn-green" onclick="App.compartirPDF()">Compartir PDF</button>
+  <button class="btn btn-outline" onclick="App.enviarWA()">WA texto</button>
 </div>
 
 <!-- WA preview -->
@@ -841,6 +842,21 @@ const FINANCIACION_FALLBACK = [
   { plazo: "mayo2026", label: "Mayo 2026", recargo_pct: 2 },
   { plazo: "dic2026", label: "Dic 2026", recargo_pct: 6 }
 ];
+
+/* ── Logo para PDF (se carga como base64 al inicio) ── */
+let logoDataUrl = null;
+(function loadLogo() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    logoDataUrl = c.toDataURL('image/png');
+  };
+  img.src = '00-LOGO HENDERSEEDS TRANSPARENTE.png';
+})();
 
 /* ── Estado ── */
 let catalogo = CATALOGO_FALLBACK;
@@ -1328,7 +1344,7 @@ const App = {
     const vendedor = $('vendedor').value || '—';
     const cliente = $('cliente').value || '';
     const has = parseFloat($('hectareas').value) || 0;
-    const fin = FINANCIACION.find(f => f.plazo === plazoActual);
+    const fin = financiacion.find(f => f.plazo === plazoActual);
     const plazoLabel = fin ? fin.label : 'Contado';
 
     let txt = `*HENDERSEEDS — Cotización*\n`;
@@ -1370,7 +1386,6 @@ const App = {
   },
   abrirWA() {
     window.open('https://wa.me/?text=' + encodeURIComponent(App.generarTexto()), '_blank');
-    App.guardarHistorial();
     App.cerrarPreview(null, true);
   },
   copiarTexto() {
@@ -1379,11 +1394,9 @@ const App = {
       btn.textContent = 'Copiado!';
       setTimeout(() => btn.textContent = 'Copiar', 1500);
     });
-    App.guardarHistorial();
   },
   copiarYCerrar() {
     navigator.clipboard.writeText(App.generarTexto()).then(() => App.cerrarPreview(null, true));
-    App.guardarHistorial();
   },
   cerrarPreview(e, force) {
     if (force || (e && e.target === $('wa-preview'))) $('wa-preview').classList.remove('show');
@@ -1412,6 +1425,206 @@ const App = {
       btn.textContent = 'Error — reintentar';
       btn.disabled = false;
     }
+  },
+
+  /* ── PDF profesional ── */
+  generarPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = 210, margin = 15;
+    const contentW = W - margin * 2;
+    let y = 15;
+
+    // Colores
+    const navy = [30, 41, 59];
+    const accent = [217, 119, 6];
+    const gris = [100, 116, 139];
+    const verde = [22, 163, 74];
+
+    // ── Header con fondo navy ──
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, W, 38, 'F');
+
+    // Logo
+    if (logoDataUrl) {
+      try { doc.addImage(logoDataUrl, 'PNG', margin, 6, 45, 26); } catch(e) {}
+    }
+
+    // Título
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COTIZACIÓN', W - margin, 16, { align: 'right' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(dateStr() + ' · ' + ($('vendedor').value || ''), W - margin, 23, { align: 'right' });
+
+    // Plazo
+    const fin = financiacion.find(f => f.plazo === plazoActual);
+    const plazoLabel = fin ? fin.label : 'Contado';
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...accent);
+    doc.text('Condición: ' + plazoLabel, W - margin, 32, { align: 'right' });
+
+    y = 45;
+
+    // ── Info cliente ──
+    const cliente = $('cliente').value || '';
+    const has = parseFloat($('hectareas').value) || 0;
+    if (cliente || has > 0) {
+      doc.setFillColor(254, 243, 199); // accent-bg
+      doc.roundedRect(margin, y, contentW, has > 0 && cliente ? 16 : 10, 2, 2, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(...navy);
+      let infoY = y + 6;
+      if (cliente) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Cliente:', margin + 4, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(cliente, margin + 24, infoY);
+      }
+      if (has > 0) {
+        const hasX = cliente ? margin + 100 : margin + 4;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Superficie:', hasX, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(has + ' has', hasX + 24, infoY);
+      }
+      y += (has > 0 && cliente ? 20 : 14);
+    }
+
+    // ── Tabla de productos ──
+    // Header de tabla
+    const colX = [margin, margin + 80, margin + 110, margin + 135, margin + 160];
+    doc.setFillColor(...navy);
+    doc.rect(margin, y, contentW, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRODUCTO', colX[0] + 3, y + 5.5);
+    doc.text('DOSIS/HA', colX[1] + 2, y + 5.5);
+    doc.text('$/UD', colX[2] + 2, y + 5.5);
+    doc.text('$/HA', colX[3] + 2, y + 5.5);
+    doc.text('VOL.', colX[4] + 2, y + 5.5);
+    y += 8;
+
+    // Filas
+    let totalHa = 0, totalIvaHa = 0;
+    const grupos = {};
+    rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
+
+    doc.setFontSize(8);
+    Object.entries(grupos).forEach(([cat, items]) => {
+      // Categoría
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y, contentW, 6, 'F');
+      doc.setTextColor(...accent);
+      doc.setFont('helvetica', 'bold');
+      doc.text(cat.toUpperCase(), margin + 3, y + 4);
+      y += 6;
+
+      items.forEach((r, i) => {
+        if (y > 265) { doc.addPage(); y = 15; }
+        const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+        const costoHa = precioP * r.dosis;
+        const vol = has > 0 ? r.dosis * has : null;
+        totalHa += costoHa;
+        totalIvaHa += costoHa * (r.iva_pct / 100);
+
+        // Fila alternada
+        if (i % 2 === 0) {
+          doc.setFillColor(248, 250, 252);
+          doc.rect(margin, y, contentW, 7, 'F');
+        }
+
+        doc.setTextColor(...navy);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        // Nombre (truncar si muy largo)
+        const nombre = r.producto.length > 42 ? r.producto.substring(0, 40) + '...' : r.producto;
+        doc.text(nombre, colX[0] + 3, y + 4.5);
+        doc.setFontSize(8);
+        doc.text(r.dosis + ' ' + r.unidad, colX[1] + 2, y + 4.5);
+        doc.text('$' + fmt(precioP), colX[2] + 2, y + 4.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('$' + fmt(costoHa), colX[3] + 2, y + 4.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...gris);
+        doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colX[4] + 2, y + 4.5);
+        y += 7;
+      });
+    });
+
+    // ── Totales ──
+    y += 3;
+    doc.setFillColor(...navy);
+    doc.rect(margin, y, contentW, has > 0 ? 22 : 16, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Costo/ha (sin IVA)', margin + 4, y + 6);
+    doc.text('USD ' + fmt(totalHa), W - margin - 4, y + 6, { align: 'right' });
+    doc.text('IVA/ha', margin + 4, y + 12);
+    doc.text('USD ' + fmt(totalIvaHa), W - margin - 4, y + 12, { align: 'right' });
+    if (has > 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...accent);
+      doc.text('TOTAL ' + has + ' has (c/IVA)', margin + 4, y + 19);
+      doc.text('USD ' + fmt((totalHa + totalIvaHa) * has), W - margin - 4, y + 19, { align: 'right' });
+    }
+    y += (has > 0 ? 28 : 20);
+
+    // ── Footer ──
+    doc.setFontSize(7);
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Precios expresados en USD. Sujetos a cambio sin previo aviso. IVA según categoría.', margin, y + 4);
+    doc.text('Henderseeds SRL — ' + dateStr(), margin, y + 8);
+
+    return doc;
+  },
+
+  async compartirPDF() {
+    if (!rows.length) return;
+    const btn = document.querySelector('#wa-bar .btn-green');
+    const origText = btn.textContent;
+    btn.textContent = 'Generando...';
+    btn.disabled = true;
+
+    try {
+      const doc = App.generarPDF();
+      const cliente = $('cliente').value || 'cotizacion';
+      const fileName = 'Henderseeds_' + cliente.replace(/\s+/g, '_') + '_' + dateStr().replace(/\//g, '-') + '.pdf';
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+      // Intentar Web Share API (funciona en móvil para compartir directo a WA)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Cotización Henderseeds',
+          text: 'Cotización ' + cliente
+        });
+      } else {
+        // Fallback: descargar PDF
+        doc.save(fileName);
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error compartiendo PDF:', err);
+        // Fallback: descargar
+        try {
+          const doc = App.generarPDF();
+          const cliente = $('cliente').value || 'cotizacion';
+          doc.save('Henderseeds_' + cliente.replace(/\s+/g, '_') + '.pdf');
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    btn.textContent = origText;
+    btn.disabled = false;
   },
 
   /* ── Clientes ── */

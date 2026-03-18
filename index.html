@@ -640,20 +640,12 @@ input, select, button { font-family: inherit; font-size: inherit; }
         <!-- Totales -->
         <div id="totales" class="totales" style="display:none;">
           <div class="tot-row">
-            <span>Costo/ha</span>
+            <span>Monto total (s/IVA)</span>
             <span class="mono" id="t-neto">—</span>
           </div>
-          <div class="tot-row">
-            <span>IVA/ha</span>
-            <span class="mono" id="t-iva">—</span>
-          </div>
           <div class="tot-row big">
-            <span>Total/ha (c/IVA)</span>
+            <span>Monto total (c/IVA)</span>
             <span class="mono" id="t-total">—</span>
-          </div>
-          <div class="tot-row big" id="t-total-has-row" style="display:none; border-top: 1px solid rgba(255,255,255,.25); margin-top:6px; padding-top:8px;">
-            <span>Total <span id="t-has-label">0</span> has</span>
-            <span class="mono" id="t-total-has">—</span>
           </div>
         </div>
 
@@ -1377,18 +1369,10 @@ const App = {
       </div>`;
     }).join('');
 
+    const mult = has > 0 ? has : 1;
     $('totales').style.display = 'block';
-    $('t-neto').textContent = 'USD ' + fmt(netoHa);
-    $('t-iva').textContent = 'USD ' + fmt(ivaHa);
-    $('t-total').textContent = 'USD ' + fmt(netoHa + ivaHa);
-
-    if (has > 0) {
-      $('t-total-has-row').style.display = 'flex';
-      $('t-has-label').textContent = has;
-      $('t-total-has').textContent = 'USD ' + fmt((netoHa + ivaHa) * has);
-    } else {
-      $('t-total-has-row').style.display = 'none';
-    }
+    $('t-neto').textContent = 'USD ' + fmt(netoHa * mult);
+    $('t-total').textContent = 'USD ' + fmt((netoHa + ivaHa) * mult);
 
     $('wa-bar').style.display = 'flex';
   },
@@ -1417,15 +1401,10 @@ const App = {
       vals[1].textContent = fmt(costoHa);
       vals[2].textContent = monto ? fmt(monto) : '—';
     }
+    const mult = has > 0 ? has : 1;
     $('totales').style.display = 'block';
-    $('t-neto').textContent = 'USD ' + fmt(netoHa);
-    $('t-iva').textContent = 'USD ' + fmt(ivaHa);
-    $('t-total').textContent = 'USD ' + fmt(netoHa + ivaHa);
-    if (has > 0) {
-      $('t-total-has-row').style.display = 'flex';
-      $('t-has-label').textContent = has;
-      $('t-total-has').textContent = 'USD ' + fmt((netoHa + ivaHa) * has);
-    }
+    $('t-neto').textContent = 'USD ' + fmt(netoHa * mult);
+    $('t-total').textContent = 'USD ' + fmt((netoHa + ivaHa) * mult);
   },
 
   removeRow(id) {

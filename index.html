@@ -983,26 +983,47 @@ const Market = {
 
 /* ── Historial ── */
 const Historial = {
-  items: JSON.parse(localStorage.getItem('historial') || '[]'),
+  items: JSON.parse(localStorage.getItem('historial_v2') || '[]'),
   render() {
     const body = $('hist-body');
     if (!Historial.items.length) {
       body.innerHTML = `<div class="hist-empty"><p style="font-size:32px; margin-bottom:8px;">&#128203;</p><p>Sin cotizaciones</p></div>`;
       return;
     }
-    body.innerHTML = Historial.items.map(h => `
-      <div class="card" style="margin-bottom:8px;">
+    body.innerHTML = Historial.items.map(h => {
+      const lineas = (h.lineas || []).map(l =>
+        `<div style="display:grid; grid-template-columns:1fr auto; gap:4px; padding:3px 0; border-bottom:1px solid var(--bg);">
+          <span style="font-size:12px;">${l.producto}</span>
+          <span style="font-family:var(--mono); font-size:11px; color:var(--accent); white-space:nowrap;">${l.dosis} ${l.unidad}/ha · $${l.costoHa}/ha</span>
+        </div>`
+      ).join('');
+      return `<div class="card" style="margin-bottom:10px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <span style="font-family:var(--mono); font-size:12px; color:var(--accent);">#${h.id}</span>
+          <span style="font-family:var(--mono); font-size:12px; color:var(--accent);">#${h.numero || h.id || '—'}</span>
           <span style="font-size:12px; color:var(--text-mut);">${h.fecha}</span>
         </div>
-        <div style="font-weight:700; font-size:14px;">${h.cliente || 'Sin nombre'}</div>
-        <div style="font-size:12px; color:var(--text-sec);">${h.items} productos — USD ${h.total}/ha</div>
-      </div>`).join('');
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
+          <span style="font-weight:700; font-size:14px;">${h.cliente || 'Sin nombre'}</span>
+          <span style="font-size:11px; color:var(--text-sec);">${h.plazo || ''}</span>
+        </div>
+        ${h.establecimiento ? `<div style="font-size:11px; color:var(--text-sec); margin-bottom:2px;">${h.establecimiento}${h.hectareas ? ' · ' + h.hectareas + ' has' : ''}</div>` : (h.hectareas ? `<div style="font-size:11px; color:var(--text-sec); margin-bottom:2px;">${h.hectareas} has</div>` : '')}
+        <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">
+          ${lineas}
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">
+          <span style="font-weight:700; font-size:13px;">Total/ha</span>
+          <span style="font-family:var(--mono); font-weight:700; font-size:13px; color:var(--accent);">USD ${h.total}</span>
+        </div>
+        ${h.hectareas ? `<div style="display:flex; justify-content:space-between;">
+          <span style="font-size:12px; color:var(--text-sec);">Total ${h.hectareas} has</span>
+          <span style="font-family:var(--mono); font-size:12px; font-weight:700;">USD ${h.totalHas || '—'}</span>
+        </div>` : ''}
+      </div>`;
+    }).join('');
   },
-  guardar(cliente, items, total) {
-    Historial.items.unshift({ id: Historial.items.length + 1, fecha: dateStr(), cliente, items, total });
-    localStorage.setItem('historial', JSON.stringify(Historial.items.slice(0, 50)));
+  guardar(data) {
+    Historial.items.unshift(data);
+    localStorage.setItem('historial_v2', JSON.stringify(Historial.items.slice(0, 50)));
     Historial.render();
   }
 };
@@ -1347,10 +1368,26 @@ const App = {
         btn.textContent = '#' + result.numero + ' registrada';
         btn.style.background = 'var(--green)';
         btn.style.borderColor = 'var(--green)';
-        // Guardar en historial local
-        let t = 0;
-        rows.forEach(r => { t += Calc.costoHa(r.precio, r.dosis, plazoActual); });
-        Historial.guardar($('cliente').value, rows.length, fmt(t));
+        // Guardar en historial local con detalle
+        const has = parseFloat($('hectareas').value) || 0;
+        const fin = financiacion.find(f => f.plazo === plazoActual);
+        let totalHa = 0;
+        const lineas = rows.map(r => {
+          const costoHa = Calc.costoHa(r.precio, r.dosis, plazoActual);
+          totalHa += costoHa;
+          return { producto: r.producto, dosis: r.dosis, unidad: r.unidad, costoHa: fmt(costoHa), cat: r.cat };
+        });
+        Historial.guardar({
+          numero: result.numero,
+          fecha: dateStr(),
+          cliente: $('cliente').value,
+          establecimiento: $('establecimiento').value || '',
+          hectareas: has,
+          plazo: fin ? fin.label : 'Contado',
+          lineas,
+          total: fmt(totalHa),
+          totalHas: has > 0 ? fmt(totalHa * has) : ''
+        });
       } else {
         btn.textContent = 'Error — reintentar';
         btn.disabled = false;

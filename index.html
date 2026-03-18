@@ -775,7 +775,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
-  <button class="btn btn-accent" id="btn-registrar" onclick="App.registrarCotizacion()">Registrar</button>
   <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')">Cotización</button>
   <button class="btn btn-outline" onclick="App.compartirPDF('receta')">Receta</button>
 </div>
@@ -991,32 +990,42 @@ const Historial = {
       return;
     }
     body.innerHTML = Historial.items.map(h => {
-      const lineas = (h.lineas || []).map(l =>
-        `<div style="display:grid; grid-template-columns:1fr auto; gap:4px; padding:3px 0; border-bottom:1px solid var(--bg);">
-          <span style="font-size:12px;">${l.producto}</span>
-          <span style="font-family:var(--mono); font-size:11px; color:var(--accent); white-space:nowrap;">${l.dosis} ${l.unidad}/ha · $${l.costoHa}/ha</span>
+      const tipoTag = h.tipo === 'Receta'
+        ? `<span style="font-size:10px; background:var(--bg); color:var(--text-sec); padding:1px 6px; border-radius:4px;">Receta</span>`
+        : `<span style="font-size:10px; background:var(--accent-bg); color:var(--accent); padding:1px 6px; border-radius:4px;">Cotización</span>`;
+      const thead = `<div style="display:grid; grid-template-columns:1fr 50px 55px 50px 50px 55px; gap:2px; padding:4px 0; border-bottom:1px solid var(--border); font-size:9px; font-weight:700; color:var(--text-mut); text-transform:uppercase;">
+        <span>Producto</span><span style="text-align:right">Dosis</span><span style="text-align:right">Vol.</span><span style="text-align:right">Precio</span><span style="text-align:right">$/ha</span><span style="text-align:right">Monto</span>
+      </div>`;
+      const trows = (h.lineas || []).map(l =>
+        `<div style="display:grid; grid-template-columns:1fr 50px 55px 50px 50px 55px; gap:2px; padding:3px 0; border-bottom:1px solid var(--bg); font-size:11px;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.producto}</span>
+          <span style="text-align:right; font-family:var(--mono); font-size:10px;">${l.dosis}</span>
+          <span style="text-align:right; font-family:var(--mono); font-size:10px;">${l.vol || '—'}</span>
+          <span style="text-align:right; font-family:var(--mono); font-size:10px;">${l.precio || '—'}</span>
+          <span style="text-align:right; font-family:var(--mono); font-size:10px;">${l.costoHa}</span>
+          <span style="text-align:right; font-family:var(--mono); font-size:10px; font-weight:700;">${l.monto || '—'}</span>
         </div>`
       ).join('');
       return `<div class="card" style="margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <span style="font-family:var(--mono); font-size:12px; color:var(--accent);">#${h.numero || h.id || '—'}</span>
-          <span style="font-size:12px; color:var(--text-mut);">${h.fecha}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span style="font-family:var(--mono); font-size:12px; color:var(--accent);">#${h.numero || '—'}</span>
+            ${tipoTag}
+          </div>
+          <span style="font-size:11px; color:var(--text-mut);">${h.fecha} · ${h.plazo || ''}</span>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
-          <span style="font-weight:700; font-size:14px;">${h.cliente || 'Sin nombre'}</span>
-          <span style="font-size:11px; color:var(--text-sec);">${h.plazo || ''}</span>
+        <div style="font-weight:700; font-size:14px; margin-bottom:1px;">${h.cliente || 'Sin nombre'}</div>
+        ${h.establecimiento || h.hectareas ? `<div style="font-size:11px; color:var(--text-sec); margin-bottom:4px;">${h.establecimiento || ''}${h.establecimiento && h.hectareas ? ' · ' : ''}${h.hectareas ? h.hectareas + ' has' : ''}</div>` : ''}
+        <div style="margin-top:4px; overflow-x:auto;">
+          ${thead}${trows}
         </div>
-        ${h.establecimiento ? `<div style="font-size:11px; color:var(--text-sec); margin-bottom:2px;">${h.establecimiento}${h.hectareas ? ' · ' + h.hectareas + ' has' : ''}</div>` : (h.hectareas ? `<div style="font-size:11px; color:var(--text-sec); margin-bottom:2px;">${h.hectareas} has</div>` : '')}
-        <div style="margin-top:6px; border-top:1px solid var(--border); padding-top:6px;">
-          ${lineas}
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">
-          <span style="font-weight:700; font-size:13px;">Total/ha</span>
-          <span style="font-family:var(--mono); font-weight:700; font-size:13px; color:var(--accent);">USD ${h.total}</span>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:4px; border-top:1px solid var(--border);">
+          <span style="font-weight:700; font-size:12px;">Total/ha</span>
+          <span style="font-family:var(--mono); font-weight:700; font-size:12px; color:var(--accent);">USD ${h.total}</span>
         </div>
         ${h.hectareas ? `<div style="display:flex; justify-content:space-between;">
-          <span style="font-size:12px; color:var(--text-sec);">Total ${h.hectareas} has</span>
-          <span style="font-family:var(--mono); font-size:12px; font-weight:700;">USD ${h.totalHas || '—'}</span>
+          <span style="font-size:11px; color:var(--text-sec);">Total ${h.hectareas} has</span>
+          <span style="font-family:var(--mono); font-size:11px; font-weight:700;">USD ${h.totalHas || '—'}</span>
         </div>` : ''}
       </div>`;
     }).join('');
@@ -1251,13 +1260,6 @@ const App = {
     const container = $('rows');
     const has = parseFloat($('hectareas').value) || 0;
 
-    // Resetear botón registrar
-    const btnR = $('btn-registrar');
-    btnR.textContent = 'Registrar';
-    btnR.disabled = false;
-    btnR.style.background = '';
-    btnR.style.borderColor = '';
-
     if (!rows.length) {
       container.innerHTML = '';
       $('totales').style.display = 'none';
@@ -1355,48 +1357,37 @@ const App = {
     App.renderRows();
   },
 
-  /* ── WhatsApp ── */
-
-  async registrarCotizacion() {
-    if (!rows.length) return;
-    const btn = $('btn-registrar');
-    btn.textContent = 'Registrando...';
-    btn.disabled = true;
+  async _registrarYGuardar(modo) {
+    const has = parseFloat($('hectareas').value) || 0;
+    const fin = financiacion.find(f => f.plazo === plazoActual);
+    let totalHa = 0;
+    const lineas = rows.map(r => {
+      const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+      const costoHa = precioP * r.dosis;
+      const vol = has > 0 ? r.dosis * has : null;
+      const monto = has > 0 ? precioP * r.dosis * has : null;
+      totalHa += costoHa;
+      return { producto: r.producto, dosis: r.dosis, unidad: r.unidad, precio: fmt(precioP), costoHa: fmt(costoHa), vol: vol ? fmt(vol) : '—', monto: monto ? fmt(monto) : '—' };
+    });
+    // Registrar en Sheets
+    let numero = '—';
     try {
       const result = await Market.registrarCotizacion();
-      if (result && result.ok) {
-        btn.textContent = '#' + result.numero + ' registrada';
-        btn.style.background = 'var(--green)';
-        btn.style.borderColor = 'var(--green)';
-        // Guardar en historial local con detalle
-        const has = parseFloat($('hectareas').value) || 0;
-        const fin = financiacion.find(f => f.plazo === plazoActual);
-        let totalHa = 0;
-        const lineas = rows.map(r => {
-          const costoHa = Calc.costoHa(r.precio, r.dosis, plazoActual);
-          totalHa += costoHa;
-          return { producto: r.producto, dosis: r.dosis, unidad: r.unidad, costoHa: fmt(costoHa), cat: r.cat };
-        });
-        Historial.guardar({
-          numero: result.numero,
-          fecha: dateStr(),
-          cliente: $('cliente').value,
-          establecimiento: $('establecimiento').value || '',
-          hectareas: has,
-          plazo: fin ? fin.label : 'Contado',
-          lineas,
-          total: fmt(totalHa),
-          totalHas: has > 0 ? fmt(totalHa * has) : ''
-        });
-      } else {
-        btn.textContent = 'Error — reintentar';
-        btn.disabled = false;
-      }
-    } catch (err) {
-      console.error('Error registrando:', err);
-      btn.textContent = 'Error — reintentar';
-      btn.disabled = false;
-    }
+      if (result && result.ok) numero = result.numero;
+    } catch(e) { console.error(e); }
+    // Guardar en historial local
+    Historial.guardar({
+      numero,
+      tipo: modo === 'receta' ? 'Receta' : 'Cotización',
+      fecha: dateStr(),
+      cliente: $('cliente').value,
+      establecimiento: $('establecimiento').value || '',
+      hectareas: has,
+      plazo: fin ? fin.label : 'Contado',
+      lineas,
+      total: fmt(totalHa),
+      totalHas: has > 0 ? fmt(totalHa * has) : ''
+    });
   },
 
   /* ── PDF profesional ── */
@@ -1636,6 +1627,9 @@ const App = {
         } catch(e) { console.error(e); }
       }
     }
+
+    // Registrar en Sheets e historial
+    App._registrarYGuardar(modo);
 
     btn.textContent = origText;
     btn.disabled = false;

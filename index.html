@@ -1375,33 +1375,31 @@ const App = {
     const accent = [217, 119, 6];
     const gris = [100, 116, 139];
 
-    // ── Header ──
-    const headerH = 28;
+    // ── Header (compacto) ──
+    const headerH = esReceta ? 18 : 20;
     doc.setFillColor(...navy);
     doc.rect(0, 0, W, headerH, 'F');
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(15);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text(esReceta ? 'RECETA' : 'COTIZACIÓN', margin, 12);
-    doc.setFontSize(9);
+    doc.text(esReceta ? 'RECETA' : 'COTIZACIÓN', margin, 10);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(dateStr() + ' · ' + ($('vendedor').value || ''), margin, 18);
-
+    const headerInfo = dateStr() + ' · ' + ($('vendedor').value || '');
     if (!esReceta) {
       const fin = financiacion.find(f => f.plazo === plazoActual);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...accent);
-      doc.text('Condición: ' + (fin ? fin.label : 'Contado'), margin, 24);
+      doc.text(headerInfo + '  ·  ' + (fin ? fin.label : 'Contado'), margin, 16);
+    } else {
+      doc.text(headerInfo, margin, 15);
     }
 
     if (logoDataUrl) {
-      const logoW = 33, logoH = logoW / 2.51;
-      try { doc.addImage(logoDataUrl, 'PNG', W - margin - logoW, 5, logoW, logoH); } catch(e) {}
+      const logoW = 28, logoH = logoW / 2.51;
+      try { doc.addImage(logoDataUrl, 'PNG', W - margin - logoW, 3, logoW, logoH); } catch(e) {}
     }
 
-    y = headerH + 6;
+    y = headerH + 4;
 
     // ── Info cliente + establecimiento ──
     const cliente = $('cliente').value || '';
@@ -1433,17 +1431,17 @@ const App = {
     rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
 
     if (esReceta) {
-      // RECETA: Producto | Formulación | Dosis/ha | Vol.
-      const colR = [margin, margin + 75, margin + 120, margin + 155];
+      // RECETA: Producto | Dosis | Volumen | Formulación
+      const colR = [margin, margin + 75, margin + 110, margin + 145];
       doc.setFillColor(...navy);
       doc.rect(margin, y, contentW, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.text('PRODUCTO', colR[0] + 3, y + 5.5);
-      doc.text('FORMULACIÓN', colR[1] + 2, y + 5.5);
-      doc.text('DOSIS/HA', colR[2] + 2, y + 5.5);
-      doc.text('VOLUMEN', colR[3] + 2, y + 5.5);
+      doc.text('DOSIS/HA', colR[1] + 2, y + 5.5);
+      doc.text('VOLUMEN', colR[2] + 2, y + 5.5);
+      doc.text('FORMULACIÓN', colR[3] + 2, y + 5.5);
       y += 8;
 
       Object.entries(grupos).forEach(([cat, items]) => {
@@ -1466,12 +1464,12 @@ const App = {
           const nombre = r.producto.length > 38 ? r.producto.substring(0, 36) + '...' : r.producto;
           doc.text(nombre, colR[0] + 3, y + 4.5);
           doc.setFontSize(8);
-          doc.setTextColor(...gris);
-          doc.text(r.formulacion || '—', colR[1] + 2, y + 4.5);
-          doc.setTextColor(...navy);
-          doc.text(r.dosis + ' ' + r.unidad + '/ha', colR[2] + 2, y + 4.5);
+          doc.text(r.dosis + ' ' + r.unidad + '/ha', colR[1] + 2, y + 4.5);
           doc.setFont('helvetica', 'bold');
-          doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colR[3] + 2, y + 4.5);
+          doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colR[2] + 2, y + 4.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...gris);
+          doc.text(r.formulacion || '—', colR[3] + 2, y + 4.5);
           y += 7;
         });
       });

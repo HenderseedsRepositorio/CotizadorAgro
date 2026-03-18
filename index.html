@@ -631,6 +631,10 @@ input, select, button { font-family: inherit; font-size: inherit; }
                 oninput="App.renderRows(); App.calcAddPreview()">
             </div>
           </div>
+          <div style="margin-top:6px;">
+            <div class="form-lbl">Establecimiento / Lote</div>
+            <input id="establecimiento" type="text" class="inp inp-sm" placeholder="Nombre del campo o lote">
+          </div>
         </div>
 
         <div class="plazo-bar">
@@ -772,22 +776,10 @@ input, select, button { font-family: inherit; font-size: inherit; }
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
   <button class="btn btn-accent" id="btn-registrar" onclick="App.registrarCotizacion()">Registrar</button>
-  <button class="btn btn-green" onclick="App.compartirPDF()">PDF</button>
-  <button class="btn btn-green" style="background:var(--green);" onclick="App.enviarWA('cotizacion')">WA Cotización</button>
-  <button class="btn btn-outline" onclick="App.enviarWA('receta')">WA Receta</button>
+  <button class="btn btn-green" onclick="App.compartirPDF('cotizacion')">Cotización</button>
+  <button class="btn btn-outline" onclick="App.compartirPDF('receta')">Receta</button>
 </div>
 
-<!-- WA preview -->
-<div class="wa-preview" id="wa-preview" onclick="App.cerrarPreview(event)">
-  <div class="wa-sheet">
-    <div class="wa-msg" id="wa-msg"></div>
-    <div class="wa-actions">
-      <button class="btn btn-green" onclick="App.abrirWA()">Abrir WhatsApp</button>
-      <button class="btn btn-outline" onclick="App.copiarYCerrar()">Copiar texto</button>
-      <button class="btn btn-outline" onclick="App.cerrarPreview(null,true)" style="grid-column:1/-1;">Cerrar</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -1343,105 +1335,7 @@ const App = {
   },
 
   /* ── WhatsApp ── */
-  generarTextoCotizacion() {
-    const vendedor = $('vendedor').value || '—';
-    const cliente = $('cliente').value || '';
-    const has = parseFloat($('hectareas').value) || 0;
-    const fin = financiacion.find(f => f.plazo === plazoActual);
-    const plazoLabel = fin ? fin.label : 'Contado';
 
-    let txt = `*HENDERSEEDS — Cotización*\n`;
-    txt += dateStr();
-    if (vendedor !== '—') txt += ` · ${vendedor}`;
-    txt += `\n`;
-    if (cliente) txt += `Cliente: ${cliente}\n`;
-    if (has > 0) txt += `Superficie: ${has} has\n`;
-    txt += `Condición: *${plazoLabel}*\n`;
-    txt += `─────────────────\n`;
-
-    let totalHa = 0;
-    const grupos = {};
-    rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
-
-    Object.entries(grupos).forEach(([cat, items]) => {
-      txt += `\n*${cat.toUpperCase()}*\n`;
-      items.forEach(r => {
-        const precioP = Calc.precioConRecargo(r.precio, plazoActual);
-        const costoHa = precioP * r.dosis;
-        const vol = has > 0 ? r.dosis * has : null;
-        const monto = has > 0 ? precioP * r.dosis * has : null;
-        totalHa += costoHa;
-        txt += `▸ *${r.producto}*\n`;
-        txt += `   Dosis: ${r.dosis} ${r.unidad}/ha`;
-        if (vol) txt += ` · Vol: ${fmt(vol)} ${r.unidad}`;
-        txt += `\n`;
-        txt += `   Precio: $${fmt(precioP)}/${r.unidad}`;
-        if (monto) txt += ` · *Monto: USD ${fmt(monto)}*`;
-        txt += `\n`;
-      });
-    });
-
-    txt += `\n─────────────────\n`;
-    txt += `*TOTAL/ha: USD ${fmt(totalHa)}*`;
-    if (has > 0) txt += ` + IVA\n*TOTAL ${has} has: USD ${fmt(totalHa * has)}* + IVA`;
-    txt += `\n\nPrecios en USD. Sujetos a cambio sin previo aviso.\nHenderseeds SRL`;
-
-    return txt;
-  },
-
-  generarTextoReceta() {
-    const cliente = $('cliente').value || '';
-    const has = parseFloat($('hectareas').value) || 0;
-
-    let txt = `*HENDERSEEDS — Receta*\n`;
-    txt += dateStr() + `\n`;
-    if (cliente) txt += `Cliente: ${cliente}\n`;
-    if (has > 0) txt += `Superficie: ${has} has\n`;
-    txt += `─────────────────\n`;
-
-    const grupos = {};
-    rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
-
-    Object.entries(grupos).forEach(([cat, items]) => {
-      txt += `\n*${cat.toUpperCase()}*\n`;
-      items.forEach(r => {
-        const vol = has > 0 ? r.dosis * has : null;
-        txt += `▸ *${r.producto}*`;
-        if (r.formulacion) txt += ` (${r.formulacion})`;
-        txt += `\n`;
-        txt += `   Dosis: ${r.dosis} ${r.unidad}/ha`;
-        if (vol) txt += ` · Vol: *${fmt(vol)} ${r.unidad}*`;
-        txt += `\n`;
-      });
-    });
-
-    txt += `\n─────────────────\n`;
-    txt += `Henderseeds SRL`;
-
-    return txt;
-  },
-
-  _waMode: 'cotizacion',
-
-  enviarWA(modo) {
-    if (!rows.length) return;
-    App._waMode = modo || 'cotizacion';
-    const txt = modo === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
-    $('wa-msg').textContent = txt;
-    $('wa-preview').classList.add('show');
-  },
-  abrirWA() {
-    const txt = App._waMode === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
-    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
-    App.cerrarPreview(null, true);
-  },
-  copiarYCerrar() {
-    const txt = App._waMode === 'receta' ? App.generarTextoReceta() : App.generarTextoCotizacion();
-    navigator.clipboard.writeText(txt).then(() => App.cerrarPreview(null, true));
-  },
-  cerrarPreview(e, force) {
-    if (force || (e && e.target === $('wa-preview'))) $('wa-preview').classList.remove('show');
-  },
   async registrarCotizacion() {
     if (!rows.length) return;
     const btn = $('btn-registrar');
@@ -1469,200 +1363,239 @@ const App = {
   },
 
   /* ── PDF profesional ── */
-  generarPDF() {
+  generarPDF(modo) {
+    const esReceta = modo === 'receta';
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = 210, margin = 15;
     const contentW = W - margin * 2;
     let y = 15;
 
-    // Colores
     const navy = [30, 41, 59];
     const accent = [217, 119, 6];
     const gris = [100, 116, 139];
-    const verde = [22, 163, 74];
 
-    // ── Header con fondo navy (compacto) ──
+    // ── Header ──
     const headerH = 28;
     doc.setFillColor(...navy);
     doc.rect(0, 0, W, headerH, 'F');
 
-    // Título y fecha a la IZQUIERDA
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
-    doc.text('COTIZACIÓN', margin, 12);
+    doc.text(esReceta ? 'RECETA' : 'COTIZACIÓN', margin, 12);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text(dateStr() + ' · ' + ($('vendedor').value || ''), margin, 18);
 
-    // Plazo debajo del título
-    const fin = financiacion.find(f => f.plazo === plazoActual);
-    const plazoLabel = fin ? fin.label : 'Contado';
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...accent);
-    doc.text('Condición: ' + plazoLabel, margin, 24);
+    if (!esReceta) {
+      const fin = financiacion.find(f => f.plazo === plazoActual);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...accent);
+      doc.text('Condición: ' + (fin ? fin.label : 'Contado'), margin, 24);
+    }
 
-    // Logo a la DERECHA — proporción original (246:98 = 2.51:1), 15% más chico
     if (logoDataUrl) {
-      const logoW = 33;  // ~38 * 0.85
-      const logoH = logoW / 2.51;  // mantener proporción
+      const logoW = 33, logoH = logoW / 2.51;
       try { doc.addImage(logoDataUrl, 'PNG', W - margin - logoW, 5, logoW, logoH); } catch(e) {}
     }
 
     y = headerH + 6;
 
-    // ── Info cliente ──
+    // ── Info cliente + establecimiento ──
     const cliente = $('cliente').value || '';
     const has = parseFloat($('hectareas').value) || 0;
-    if (cliente || has > 0) {
-      doc.setFillColor(254, 243, 199); // accent-bg
-      doc.roundedRect(margin, y, contentW, has > 0 && cliente ? 16 : 10, 2, 2, 'F');
-      doc.setFontSize(10);
+    const estab = $('establecimiento').value || '';
+    const infoItems = [];
+    if (cliente) infoItems.push(['Cliente:', cliente]);
+    if (estab) infoItems.push(['Establecimiento:', estab]);
+    if (has > 0) infoItems.push(['Superficie:', has + ' has']);
+
+    if (infoItems.length) {
+      const boxH = 6 + infoItems.length * 6;
+      doc.setFillColor(254, 243, 199);
+      doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
+      doc.setFontSize(9);
       doc.setTextColor(...navy);
-      let infoY = y + 6;
-      if (cliente) {
+      infoItems.forEach((item, i) => {
+        const iy = y + 5 + i * 6;
         doc.setFont('helvetica', 'bold');
-        doc.text('Cliente:', margin + 4, infoY);
+        doc.text(item[0], margin + 4, iy);
         doc.setFont('helvetica', 'normal');
-        doc.text(cliente, margin + 24, infoY);
-      }
-      if (has > 0) {
-        const hasX = cliente ? margin + 100 : margin + 4;
-        doc.setFont('helvetica', 'bold');
-        doc.text('Superficie:', hasX, infoY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(has + ' has', hasX + 24, infoY);
-      }
-      y += (has > 0 && cliente ? 20 : 14);
+        doc.text(item[1], margin + 35, iy);
+      });
+      y += boxH + 4;
     }
 
-    // ── Tabla de productos ──
-    // Header de tabla
-    const colX = [margin, margin + 80, margin + 110, margin + 135, margin + 160];
-    doc.setFillColor(...navy);
-    doc.rect(margin, y, contentW, 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PRODUCTO', colX[0] + 3, y + 5.5);
-    doc.text('DOSIS/HA', colX[1] + 2, y + 5.5);
-    doc.text('$/UD', colX[2] + 2, y + 5.5);
-    doc.text('$/HA', colX[3] + 2, y + 5.5);
-    doc.text('VOL.', colX[4] + 2, y + 5.5);
-    y += 8;
-
-    // Filas
-    let totalHa = 0, totalIvaHa = 0;
+    // ── Tabla ──
     const grupos = {};
     rows.forEach(r => { if (!grupos[r.cat]) grupos[r.cat] = []; grupos[r.cat].push(r); });
 
-    doc.setFontSize(8);
-    Object.entries(grupos).forEach(([cat, items]) => {
-      // Categoría
-      doc.setFillColor(241, 245, 249);
-      doc.rect(margin, y, contentW, 6, 'F');
-      doc.setTextColor(...accent);
+    if (esReceta) {
+      // RECETA: Producto | Formulación | Dosis/ha | Vol.
+      const colR = [margin, margin + 75, margin + 120, margin + 155];
+      doc.setFillColor(...navy);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text(cat.toUpperCase(), margin + 3, y + 4);
-      y += 6;
+      doc.text('PRODUCTO', colR[0] + 3, y + 5.5);
+      doc.text('FORMULACIÓN', colR[1] + 2, y + 5.5);
+      doc.text('DOSIS/HA', colR[2] + 2, y + 5.5);
+      doc.text('VOLUMEN', colR[3] + 2, y + 5.5);
+      y += 8;
 
-      items.forEach((r, i) => {
-        if (y > 265) { doc.addPage(); y = 15; }
-        const precioP = Calc.precioConRecargo(r.precio, plazoActual);
-        const costoHa = precioP * r.dosis;
-        const vol = has > 0 ? r.dosis * has : null;
-        totalHa += costoHa;
-        totalIvaHa += costoHa * (r.iva_pct / 100);
-
-        // Fila alternada
-        if (i % 2 === 0) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin, y, contentW, 7, 'F');
-        }
-
-        doc.setTextColor(...navy);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        // Nombre (truncar si muy largo)
-        const nombre = r.producto.length > 42 ? r.producto.substring(0, 40) + '...' : r.producto;
-        doc.text(nombre, colX[0] + 3, y + 4.5);
-        doc.setFontSize(8);
-        doc.text(r.dosis + ' ' + r.unidad, colX[1] + 2, y + 4.5);
-        doc.text('$' + fmt(precioP), colX[2] + 2, y + 4.5);
+      Object.entries(grupos).forEach(([cat, items]) => {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, y, contentW, 6, 'F');
+        doc.setTextColor(...accent);
         doc.setFont('helvetica', 'bold');
-        doc.text('$' + fmt(costoHa), colX[3] + 2, y + 4.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...gris);
-        doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colX[4] + 2, y + 4.5);
-        y += 7;
-      });
-    });
+        doc.setFontSize(8);
+        doc.text(cat.toUpperCase(), margin + 3, y + 4);
+        y += 6;
 
-    // ── Totales ──
-    y += 3;
-    doc.setFillColor(...navy);
-    doc.rect(margin, y, contentW, has > 0 ? 22 : 16, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Costo/ha (sin IVA)', margin + 4, y + 6);
-    doc.text('USD ' + fmt(totalHa), W - margin - 4, y + 6, { align: 'right' });
-    doc.text('IVA/ha', margin + 4, y + 12);
-    doc.text('USD ' + fmt(totalIvaHa), W - margin - 4, y + 12, { align: 'right' });
-    if (has > 0) {
-      doc.setFontSize(11);
+        items.forEach((r, i) => {
+          if (y > 265) { doc.addPage(); y = 15; }
+          const vol = has > 0 ? r.dosis * has : null;
+          if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
+
+          doc.setTextColor(...navy);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          const nombre = r.producto.length > 38 ? r.producto.substring(0, 36) + '...' : r.producto;
+          doc.text(nombre, colR[0] + 3, y + 4.5);
+          doc.setFontSize(8);
+          doc.setTextColor(...gris);
+          doc.text(r.formulacion || '—', colR[1] + 2, y + 4.5);
+          doc.setTextColor(...navy);
+          doc.text(r.dosis + ' ' + r.unidad + '/ha', colR[2] + 2, y + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colR[3] + 2, y + 4.5);
+          y += 7;
+        });
+      });
+    } else {
+      // COTIZACIÓN: Producto | Dosis/ha | Vol. | $/ud | Monto
+      const colC = [margin, margin + 70, margin + 100, margin + 130, margin + 155];
+      doc.setFillColor(...navy);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...accent);
-      doc.text('TOTAL ' + has + ' has (c/IVA)', margin + 4, y + 19);
-      doc.text('USD ' + fmt((totalHa + totalIvaHa) * has), W - margin - 4, y + 19, { align: 'right' });
+      doc.text('PRODUCTO', colC[0] + 3, y + 5.5);
+      doc.text('DOSIS/HA', colC[1] + 2, y + 5.5);
+      doc.text('VOL.', colC[2] + 2, y + 5.5);
+      doc.text('$/UD', colC[3] + 2, y + 5.5);
+      doc.text('MONTO', colC[4] + 2, y + 5.5);
+      y += 8;
+
+      let totalHa = 0, totalIvaHa = 0;
+
+      Object.entries(grupos).forEach(([cat, items]) => {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, y, contentW, 6, 'F');
+        doc.setTextColor(...accent);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(cat.toUpperCase(), margin + 3, y + 4);
+        y += 6;
+
+        items.forEach((r, i) => {
+          if (y > 265) { doc.addPage(); y = 15; }
+          const precioP = Calc.precioConRecargo(r.precio, plazoActual);
+          const costoHa = precioP * r.dosis;
+          const vol = has > 0 ? r.dosis * has : null;
+          const monto = has > 0 ? precioP * r.dosis * has : null;
+          totalHa += costoHa;
+          totalIvaHa += costoHa * (r.iva_pct / 100);
+
+          if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, 7, 'F'); }
+
+          doc.setTextColor(...navy);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          const nombre = r.producto.length > 36 ? r.producto.substring(0, 34) + '...' : r.producto;
+          doc.text(nombre, colC[0] + 3, y + 4.5);
+          doc.setFontSize(8);
+          doc.text(r.dosis + ' ' + r.unidad, colC[1] + 2, y + 4.5);
+          doc.setTextColor(...gris);
+          doc.text(vol ? fmt(vol) + ' ' + r.unidad : '—', colC[2] + 2, y + 4.5);
+          doc.setTextColor(...navy);
+          doc.text('$' + fmt(precioP), colC[3] + 2, y + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(monto ? '$' + fmt(monto) : '—', colC[4] + 2, y + 4.5);
+          y += 7;
+        });
+      });
+
+      // Totales
+      y += 3;
+      doc.setFillColor(...navy);
+      doc.rect(margin, y, contentW, has > 0 ? 22 : 16, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Costo/ha (sin IVA)', margin + 4, y + 6);
+      doc.text('USD ' + fmt(totalHa), W - margin - 4, y + 6, { align: 'right' });
+      doc.text('IVA/ha', margin + 4, y + 12);
+      doc.text('USD ' + fmt(totalIvaHa), W - margin - 4, y + 12, { align: 'right' });
+      if (has > 0) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...accent);
+        doc.text('TOTAL ' + has + ' has (c/IVA)', margin + 4, y + 19);
+        doc.text('USD ' + fmt((totalHa + totalIvaHa) * has), W - margin - 4, y + 19, { align: 'right' });
+      }
+      y += (has > 0 ? 28 : 20);
     }
-    y += (has > 0 ? 28 : 20);
 
     // ── Footer ──
     doc.setFontSize(7);
     doc.setTextColor(...gris);
     doc.setFont('helvetica', 'italic');
-    doc.text('Precios expresados en USD. Sujetos a cambio sin previo aviso. IVA según categoría.', margin, y + 4);
-    doc.text('Henderseeds SRL — ' + dateStr(), margin, y + 8);
+    if (esReceta) {
+      doc.text('Henderseeds SRL — ' + dateStr(), margin, y + 6);
+    } else {
+      doc.text('Precios expresados en USD. Sujetos a cambio sin previo aviso. IVA según categoría.', margin, y + 4);
+      doc.text('Henderseeds SRL — ' + dateStr(), margin, y + 8);
+    }
 
     return doc;
   },
 
-  async compartirPDF() {
+  async compartirPDF(modo) {
     if (!rows.length) return;
-    const btn = document.querySelector('#wa-bar .btn-green');
+    const esReceta = modo === 'receta';
+    const btnSelector = esReceta ? '#wa-bar .btn-outline' : '#wa-bar .btn-green';
+    const btn = document.querySelector(btnSelector);
     const origText = btn.textContent;
     btn.textContent = 'Generando...';
     btn.disabled = true;
 
     try {
-      const doc = App.generarPDF();
-      const cliente = $('cliente').value || 'cotizacion';
-      const fileName = 'Henderseeds_' + cliente.replace(/\s+/g, '_') + '_' + dateStr().replace(/\//g, '-') + '.pdf';
+      const doc = App.generarPDF(modo);
+      const cliente = $('cliente').value || (esReceta ? 'receta' : 'cotizacion');
+      const prefix = esReceta ? 'Receta' : 'Cotizacion';
+      const fileName = 'Henderseeds_' + prefix + '_' + cliente.replace(/\s+/g, '_') + '_' + dateStr().replace(/\//g, '-') + '.pdf';
       const pdfBlob = doc.output('blob');
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // Intentar Web Share API (funciona en móvil para compartir directo a WA)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Cotización Henderseeds',
-          text: 'Cotización ' + cliente
+          title: (esReceta ? 'Receta' : 'Cotización') + ' Henderseeds',
+          text: (esReceta ? 'Receta' : 'Cotización') + ' ' + cliente
         });
       } else {
-        // Fallback: descargar PDF
         doc.save(fileName);
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Error compartiendo PDF:', err);
-        // Fallback: descargar
         try {
-          const doc = App.generarPDF();
-          const cliente = $('cliente').value || 'cotizacion';
-          doc.save('Henderseeds_' + cliente.replace(/\s+/g, '_') + '.pdf');
+          const doc = App.generarPDF(modo);
+          doc.save('Henderseeds_' + (esReceta ? 'Receta' : 'Cotizacion') + '.pdf');
         } catch(e) { console.error(e); }
       }
     }

@@ -1384,13 +1384,24 @@ const App = {
     App.renderLista(el.dataset.plazo);
   },
   renderLista(plazo) {
-    let html = '';
+    // Agrupar todos los productos por proveedor
+    const porProveedor = {};
     Object.entries(catalogo).forEach(([cat, prods]) => {
-      html += `<div class="lista-cat">${cat}</div>`;
       prods.forEach(p => {
+        const prov = p.proveedor || 'Sin proveedor';
+        if (!porProveedor[prov]) porProveedor[prov] = [];
+        porProveedor[prov].push({ ...p, categoria: cat });
+      });
+    });
+    // Ordenar proveedores alfabéticamente
+    const proveedores = Object.keys(porProveedor).sort();
+    let html = '';
+    proveedores.forEach(prov => {
+      html += `<div class="lista-cat">${prov}</div>`;
+      porProveedor[prov].forEach(p => {
         const precio = Calc.precioConRecargo(p.precio_usd, plazo);
         html += `<div class="lista-row">
-          <div><div class="lista-name">${p.producto}</div><div class="lista-unit">${p.proveedor} · ${p.unidad}</div></div>
+          <div><div class="lista-name">${p.producto}</div><div class="lista-unit">${p.categoria} · ${p.unidad}</div></div>
           <span class="lista-price">$${fmt(precio)}/${p.unidad}</span>
         </div>`;
       });

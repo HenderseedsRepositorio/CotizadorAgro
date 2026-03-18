@@ -175,10 +175,11 @@ input, select, button { font-family: inherit; font-size: inherit; }
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 10px 10px;
   margin-bottom: 5px;
   box-shadow: var(--shadow);
   animation: slideIn .2s ease;
+  min-height: 48px;
 }
 .row-inp {
   width: 100%;
@@ -1099,7 +1100,7 @@ const App = {
     });
 
     document.addEventListener('click', e => {
-      if (!e.target.closest('.search-wrap')) App.hideDropdown();
+      if (!e.target.closest('.row-new-search') && !e.target.closest('#dropdown')) App.hideDropdown();
       if (!e.target.closest('#cliente') && !e.target.closest('#cliente-dd')) App.hideClienteDD();
     });
 
@@ -1184,11 +1185,9 @@ const App = {
   showDropdown() {
     App.filterDropdown();
     $('dropdown').classList.add('show');
-    $('add-area').classList.add('active');
   },
   hideDropdown() {
     $('dropdown').classList.remove('show');
-    $('add-area').classList.remove('active');
     highlightIdx = -1;
   },
   filterDropdown() {

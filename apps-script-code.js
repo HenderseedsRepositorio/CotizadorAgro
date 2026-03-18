@@ -206,36 +206,52 @@ function getHistorialAgro() {
   const data = sheet.getDataRange().getValues();
   if (data.length <= 1) return { ok: true, historial: [] };
 
-  const rows = data.slice(1).reverse().slice(0, 200);
+  const rows = data.slice(1).reverse().slice(0, 500);
   const grouped = {};
 
   rows.forEach(row => {
     const nro = row[0];
     if (!nro) return;
+    const has = Number(row[5]) || 0;
     if (!grouped[nro]) {
       grouped[nro] = {
-        nro: nro,
+        numero: nro,
         fecha: row[1] ? Utilities.formatDate(new Date(row[1]), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy') : '',
         vendedor: row[2] || '',
         cliente: row[3] || '',
-        localidad: row[4] || '',
-        hectareas: Number(row[5]) || 0,
+        establecimiento: row[4] || '',
+        hectareas: has,
         plazo: row[6] || '',
-        items: [],
+        lineas: [],
         total: 0
       };
     }
+    const precio = Number(row[11]) || 0;
+    const dosis = Number(row[12]) || 0;
     const costoHa = Number(row[13]) || 0;
-    grouped[nro].items.push({
-      categoria: row[8] || '',
+    const vol = has > 0 ? dosis * has : 0;
+    const monto = has > 0 ? precio * dosis * has : 0;
+    grouped[nro].lineas.push({
       producto: row[9] || '',
-      dosis: Number(row[12]) || 0,
-      costoHa: costoHa
+      unidad: row[10] || 'L',
+      precio: precio.toFixed(2),
+      dosis: dosis,
+      costoHa: costoHa.toFixed(2),
+      vol: vol > 0 ? vol.toFixed(2) : '—',
+      monto: monto > 0 ? monto.toFixed(2) : '—'
     });
     grouped[nro].total += costoHa;
   });
 
-  return { ok: true, historial: Object.values(grouped) };
+  // Formatear totales
+  const result = Object.values(grouped);
+  result.forEach(h => {
+    const totalHas = h.hectareas > 0 ? (h.total * h.hectareas).toFixed(2) : '';
+    h.total = h.total.toFixed(2);
+    h.totalHas = totalHas;
+  });
+
+  return { ok: true, historial: result };
 }
 
 /* ═══════════════════════════════════════

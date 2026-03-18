@@ -982,7 +982,17 @@ const Market = {
 
 /* ── Historial ── */
 const Historial = {
-  items: JSON.parse(localStorage.getItem('historial_v2') || '[]'),
+  items: [],
+  async cargar() {
+    if (!API_URL) return;
+    try {
+      const res = await Market.fetch('getHistorialAgro');
+      if (res.ok && res.historial) {
+        Historial.items = res.historial;
+        Historial.render();
+      }
+    } catch(e) { console.error('Error cargando historial:', e); }
+  },
   render() {
     const body = $('hist-body');
     if (!Historial.items.length) {
@@ -1030,10 +1040,8 @@ const Historial = {
       </div>`;
     }).join('');
   },
-  guardar(data) {
-    Historial.items.unshift(data);
-    localStorage.setItem('historial_v2', JSON.stringify(Historial.items.slice(0, 50)));
-    Historial.render();
+  async recargar() {
+    await Historial.cargar();
   }
 };
 
@@ -1053,6 +1061,7 @@ const App = {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         $('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'historial') Historial.cargar();
       });
     });
 
@@ -1074,7 +1083,6 @@ const App = {
     $('af-dosis').addEventListener('keydown', e => { if (e.key === 'Enter') App.confirmarAdd(); });
 
     Market.init();
-    Historial.render();
     App.renderRef();
     App.renderLista('contado');
   },
@@ -1375,19 +1383,8 @@ const App = {
       const result = await Market.registrarCotizacion();
       if (result && result.ok) numero = result.numero;
     } catch(e) { console.error(e); }
-    // Guardar en historial local
-    Historial.guardar({
-      numero,
-      tipo: modo === 'receta' ? 'Receta' : 'Cotización',
-      fecha: dateStr(),
-      cliente: $('cliente').value,
-      establecimiento: $('establecimiento').value || '',
-      hectareas: has,
-      plazo: fin ? fin.label : 'Contado',
-      lineas,
-      total: fmt(totalHa),
-      totalHas: has > 0 ? fmt(totalHa * has) : ''
-    });
+    // Recargar historial desde Sheets
+    Historial.recargar();
   },
 
   /* ── PDF profesional ── */

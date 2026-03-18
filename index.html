@@ -159,8 +159,8 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .rows-header {
   display: grid;
-  grid-template-columns: 130px 1fr 62px 50px 50px 58px 62px 26px;
-  gap: 4px;
+  grid-template-columns: 1fr 68px 52px 58px 62px 68px 24px;
+  gap: 6px;
   padding: 6px 10px;
   font-size: 10px;
   font-weight: 700;
@@ -170,42 +170,17 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .row-item {
   display: grid;
-  grid-template-columns: 130px 1fr 62px 50px 50px 58px 62px 26px;
-  gap: 4px;
+  grid-template-columns: 1fr 68px 52px 58px 62px 68px 24px;
+  gap: 6px;
   align-items: center;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 7px 10px;
+  padding: 8px 10px;
   margin-bottom: 5px;
   box-shadow: var(--shadow);
   animation: slideIn .2s ease;
 }
-/* Soporte: bloque separado a la izquierda */
-.row-soporte-block {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  border-right: 2px solid var(--border);
-  padding-right: 8px;
-  margin-right: 4px;
-}
-.row-sop {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-align: center;
-  line-height: 1.2;
-}
-.row-sop-label {
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--text-mut);
-  text-transform: uppercase;
-}
-.row-sop-val { color: var(--text-sec); }
-.row-sop-val.costo { color: #be185d; }
-.row-sop-val.margen { color: var(--text-sec); }
-.row-sop-val.pmargen { color: var(--accent); font-weight: 600; }
 .row-precio-inp {
   width: 100%;
   padding: 3px 4px;
@@ -254,13 +229,13 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 /* ── Agregar producto ── */
 .add-area {
-  background: var(--card);
-  border: 2px dashed var(--border);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 10px;
   margin-bottom: 10px;
 }
-.add-area.active { border-color: var(--accent); }
+.add-area.active { border-color: var(--accent); background: var(--card); }
 .search-wrap { position: relative; }
 .search-inp {
   width: 100%;
@@ -645,7 +620,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
         <div class="rows-scroll">
           <div class="rows-header">
-            <span style="color:var(--text-mut);">Soporte</span>
             <span>Producto</span>
             <span style="text-align:right">Precio</span>
             <span style="text-align:right">Dosis</span>
@@ -1448,11 +1422,6 @@ const App = {
       const volumen = has > 0 ? r.dosis * has : null;
       const monto = has > 0 ? costoHa * has : null;
       return `<div class="row-item" data-rowid="${r.id}">
-        <div class="row-soporte-block">
-          <div class="row-sop"><div class="row-sop-label">Costo</div><div class="row-sop-val costo">$${fmt(r.costo_usd)}</div></div>
-          <div class="row-sop"><div class="row-sop-label">Mrg</div><div class="row-sop-val margen">${r.margen_pct}%</div></div>
-          <div class="row-sop"><div class="row-sop-label">P.Mrg</div><div class="row-sop-val pmargen">$${fmt(r.precio_margen)}</div></div>
-        </div>
         <div class="row-prod">
           <span class="row-prod-name">${r.producto}</span>
           <span class="row-prod-meta">${(r.proveedor||'').replace(/ S\\.A\\.?/g,'')} · ${r.unidad}</span>

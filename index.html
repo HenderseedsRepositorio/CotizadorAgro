@@ -770,7 +770,8 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 <!-- WA bar -->
 <div class="wa-bar" id="wa-bar" style="display:none;">
-  <button class="btn btn-green" onclick="App.enviarWA()">Enviar por WhatsApp</button>
+  <button class="btn btn-accent" id="btn-registrar" onclick="App.registrarCotizacion()">Registrar</button>
+  <button class="btn btn-green" onclick="App.enviarWA()">WhatsApp</button>
   <button class="btn btn-outline" onclick="App.copiarTexto()">Copiar</button>
 </div>
 
@@ -1218,6 +1219,13 @@ const App = {
     const container = $('rows');
     const has = parseFloat($('hectareas').value) || 0;
 
+    // Resetear botón registrar
+    const btnR = $('btn-registrar');
+    btnR.textContent = 'Registrar';
+    btnR.disabled = false;
+    btnR.style.background = '';
+    btnR.style.borderColor = '';
+
     if (!rows.length) {
       container.innerHTML = '';
       $('totales').style.display = 'none';
@@ -1380,14 +1388,29 @@ const App = {
   cerrarPreview(e, force) {
     if (force || (e && e.target === $('wa-preview'))) $('wa-preview').classList.remove('show');
   },
-  async guardarHistorial() {
-    let t = 0;
-    rows.forEach(r => { t += Calc.costoHa(r.precio, r.dosis, plazoActual); });
-    Historial.guardar($('cliente').value, rows.length, fmt(t));
-    // Registrar en Sheets si está conectado
-    const result = await Market.registrarCotizacion();
-    if (result && result.ok) {
-      console.log('Cotización #' + result.numero + ' registrada en Sheets');
+  async registrarCotizacion() {
+    if (!rows.length) return;
+    const btn = $('btn-registrar');
+    btn.textContent = 'Registrando...';
+    btn.disabled = true;
+    try {
+      const result = await Market.registrarCotizacion();
+      if (result && result.ok) {
+        btn.textContent = '#' + result.numero + ' registrada';
+        btn.style.background = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+        // Guardar en historial local
+        let t = 0;
+        rows.forEach(r => { t += Calc.costoHa(r.precio, r.dosis, plazoActual); });
+        Historial.guardar($('cliente').value, rows.length, fmt(t));
+      } else {
+        btn.textContent = 'Error — reintentar';
+        btn.disabled = false;
+      }
+    } catch (err) {
+      console.error('Error registrando:', err);
+      btn.textContent = 'Error — reintentar';
+      btn.disabled = false;
     }
   },
 

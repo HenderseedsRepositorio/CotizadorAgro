@@ -32,7 +32,7 @@
  * B: label
  * C: recargo_pct
  *
- * HOJA "Cotizaciones Agro" — se crea automáticamente
+ * HOJA "Historial Cotizaciones" — se crea automáticamente
  */
 
 /* ── Mapeo SUBTIPO → categoría legible ── */
@@ -200,7 +200,7 @@ function getFinanciacion() {
    ═══════════════════════════════════════ */
 function getHistorialAgro() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Cotizaciones Agro');
+  const sheet = ss.getSheetByName('Historial Cotizaciones');
   if (!sheet) return { ok: true, historial: [] };
 
   const data = sheet.getDataRange().getValues();
@@ -243,7 +243,7 @@ function getHistorialAgro() {
    ═══════════════════════════════════════ */
 function getNextNumberAgro() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Cotizaciones Agro');
+  const sheet = ss.getSheetByName('Historial Cotizaciones');
   if (!sheet) return { numero: 1 };
 
   const data = sheet.getDataRange().getValues();
@@ -262,10 +262,10 @@ function getNextNumberAgro() {
    ═══════════════════════════════════════ */
 function registrarCotizacionAgro(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Cotizaciones Agro');
+  let sheet = ss.getSheetByName('Historial Cotizaciones');
 
   if (!sheet) {
-    sheet = ss.insertSheet('Cotizaciones Agro');
+    sheet = ss.insertSheet('Historial Cotizaciones');
     sheet.appendRow([
       'nro_cotizacion', 'fecha', 'vendedor', 'cliente', 'localidad',
       'hectareas', 'plazo', 'recargo_pct',

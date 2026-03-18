@@ -1,41 +1,27 @@
 /**
  * ═══════════════════════════════════════════════════════════
- * HENDERSEEDS — Apps Script (backend cotizador agro)
+ * HENDERSEEDS — Apps Script UNIFICADO
+ * Sirve tanto al Cotizador Nidera como al Cotizador Agro
  *
- * SETUP:
- * 1. Abrí tu Google Sheet (el mismo del cotizador Nidera)
- * 2. Extensiones → Apps Script
- * 3. Creá un archivo nuevo (ej: Agro.gs) y pegá este código
- *    O agregalo al código existente
- * 4. Si ya tenés un doGet, integrá los cases nuevos al switch
- * 5. Re-deploy
+ * HOJAS ESPERADAS EN EL SPREADSHEET:
+ *
+ * ── Nidera ──
+ *   "Catalogo"        → híbridos maíz/girasol (tipo, id, b1, b2, b3)
+ *   "Condiciones"     → condiciones comerciales
+ *   "Cotizaciones"    → historial cotizaciones Nidera
+ *   "DatosTecnicos"   → fichas técnicas híbridos
+ *
+ * ── Agro ──
+ *   "Catalogo Agronomia" → productos agro (14 columnas)
+ *   "Financiacion"       → plazos y recargos
+ *   "Historial Cotizaciones" → historial cotizaciones Agro
+ *   "Clientes"           → lista de clientes (nombre, CUIT)
  * ═══════════════════════════════════════════════════════════
- *
- * HOJA "Catalogo Agronomia" — columnas esperadas:
- * A: N°
- * B: PRODUCTO
- * C: Presentacion
- * D: FORMULACION
- * E: PROVEEDOR
- * F: IVA
- * G: CostoHseeds
- * H: Margen
- * I: P con margen
- * J: PRICING
- * K: Dosis Referencia
- * L: TIPO
- * M: SUBTIPO (HER, INS, FUN, CUR, COA, etc.)
- * N: Stock Ajustado
- *
- * HOJA "Financiacion" — columnas:
- * A: plazo
- * B: label
- * C: recargo_pct
- *
- * HOJA "Historial Cotizaciones" — se crea automáticamente
  */
 
-/* ── Mapeo SUBTIPO → categoría legible ── */
+const SPREADSHEET_ID = '1vFYnqndbN3ya3_aZMu4qozXMMlJtcqtrdtKLm-PK9Ew';
+
+/* ── Mapeo SUBTIPO → categoría legible (Agro) ── */
 const SUBTIPO_MAP = {
   'HER': 'Herbicidas',
   'INS': 'Insecticidas',
@@ -48,35 +34,33 @@ const SUBTIPO_MAP = {
   'FER': 'Fertilizantes'
 };
 
+/* ═══════════════════════════════════════
+   ROUTER — doGet / doPost
+   ═══════════════════════════════════════ */
+
 function doGet(e) {
-  const action = e.parameter.action || '';
-  let result;
+  var action = e.parameter.action || '';
+  var result;
 
   try {
     switch (action) {
-      // ── Acciones del cotizador AGRO ──
-      case 'getCatalogoAgro':
-        result = getCatalogoAgro();
-        break;
-      case 'getFinanciacion':
-        result = getFinanciacion();
-        break;
-      case 'getHistorialAgro':
-        result = getHistorialAgro();
-        break;
-      case 'getNextNumberAgro':
-        result = getNextNumberAgro();
-        break;
-      case 'getClientes':
-        result = getClientes();
-        break;
+      // ── Nidera ──
+      case 'getCatalogo':         result = getCatalogo(); break;
+      case 'getCondiciones':      result = getCondiciones(); break;
+      case 'getHistorial':        result = getHistorial(); break;
+      case 'getNextNumber':       result = jsonWrap({ numero: getNextQuoteNumber() }); break;
+      case 'getDatosTecnicos':    result = getDatosTecnicos(); break;
 
-      // ── Acá irían las acciones de Nidera si las tenés ──
-      // case 'getPrecios': ...
-      // case 'getCatalogo': ...
+      // ── Agro ──
+      case 'getCatalogoAgro':     result = getCatalogoAgro(); break;
+      case 'getFinanciacion':     result = getFinanciacionAgro(); break;
+      case 'getFinanciacionAgro': result = getFinanciacionAgro(); break;
+      case 'getHistorialAgro':    result = getHistorialAgro(); break;
+      case 'getNextNumberAgro':   result = getNextNumberAgro(); break;
+      case 'getClientes':         result = getClientes(); break;
 
       default:
-        result = { error: 'Acción no válida: ' + action };
+        result = { error: 'Acción no reconocida: ' + action };
     }
   } catch (err) {
     result = { error: err.message };
@@ -88,15 +72,26 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  let result;
+  var result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    if (data.action === 'registrarAgro') {
-      result = registrarCotizacionAgro(data);
-    } else if (data.action === 'addCliente') {
-      result = addCliente(data);
-    } else {
-      result = { error: 'Acción POST no válida' };
+    var data = JSON.parse(e.postData.contents);
+
+    switch (data.action) {
+      // ── Nidera ──
+      case 'registrar':
+        result = { ok: true, numero: registrarCotizacion(data) };
+        break;
+
+      // ── Agro ──
+      case 'registrarAgro':
+        result = registrarCotizacionAgro(data);
+        break;
+      case 'addCliente':
+        result = addCliente(data);
+        break;
+
+      default:
+        result = { error: 'Acción POST no reconocida: ' + data.action };
     }
   } catch (err) {
     result = { error: err.message };
@@ -107,39 +102,175 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-/* ═══════════════════════════════════════
-   GET CATALOGO AGRO
-   Lee "Catalogo Agronomia" y agrupa por SUBTIPO
-   ═══════════════════════════════════════ */
+/* helper — solo para getNextNumber que devuelve un objeto simple */
+function jsonWrap(obj) { return obj; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   ██  NIDERA — funciones
+   ═══════════════════════════════════════════════════════════ */
+
+function getCatalogo() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Catalogo');
+  var data = sheet.getDataRange().getValues();
+  var catalogo = { maiz: [], girasol: [] };
+  for (var i = 1; i < data.length; i++) {
+    var tipo = data[i][0], id = data[i][1], b1 = data[i][2], b2 = data[i][3], b3 = data[i][4];
+    if (!tipo || !id) continue;
+    var item = { id: String(id).trim(), b1: Number(b1) || 0, b2: Number(b2) || null, b3: Number(b3) || null };
+    var key = String(tipo).trim().toLowerCase();
+    if (key === 'maiz' || key === 'maíz') catalogo.maiz.push(item);
+    else if (key === 'girasol') catalogo.girasol.push(item);
+  }
+  return catalogo;
+}
+
+function getCondiciones() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Condiciones');
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var moneda = data[i][0], detalle = data[i][1], tna = data[i][2], tea = data[i][3], plazo = data[i][4];
+    if (!moneda && !detalle) continue;
+    result.push({
+      moneda: String(moneda || '').trim(),
+      detalle: String(detalle || '').trim(),
+      tna: String(tna || '').trim(),
+      tea: String(tea || '').trim(),
+      plazo: String(plazo || '').trim()
+    });
+  }
+  return result;
+}
+
+function getHistorial() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Cotizaciones');
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return [];
+  var startRow = Math.max(2, lastRow - 99);
+  var numRows = lastRow - startRow + 1;
+  var numCols = 19;
+  var range = sheet.getRange(startRow, 1, numRows, numCols);
+  var values = range.getValues();
+  return values;
+}
+
+function getNextQuoteNumber() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Cotizaciones');
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 1;
+  var lastNumber = sheet.getRange(lastRow, 1).getValue();
+  return (Number(lastNumber) || 0) + 1;
+}
+
+function registrarCotizacion(data) {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Cotizaciones');
+  var numero = getNextQuoteNumber();
+  var fecha = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm');
+
+  var items = data.items || [];
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    sheet.appendRow([
+      numero,
+      fecha,
+      data.vendedor || '—',
+      data.cliente || '—',
+      data.cuit || '—',
+      item.hibrido || '',
+      'B' + (item.banda || 1),
+      item.cant || 0,
+      item.precioNeto || 0,
+      item.bandPct || 0,
+      item.pPre || 0,
+      item.pCont || 0,
+      item.pCre || 0,
+      item.pCro || 0,
+      item.pVol || 0,
+      item.valZ || 0,
+      item.valP || 0,
+      item.totalSIVA || 0,
+      item.totalCIVA || 0
+    ]);
+  }
+
+  return numero;
+}
+
+function getDatosTecnicos() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('DatosTecnicos');
+  if (!sheet) return { error: 'Hoja DatosTecnicos no encontrada' };
+
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { maiz: [], girasol: [] };
+
+  var headers = data[0];
+  var result = { maiz: [], girasol: [] };
+
+  for (var i = 1; i < data.length; i++) {
+    var row = {};
+    for (var j = 0; j < headers.length; j++) {
+      var key = String(headers[j]).trim();
+      var val = data[i][j];
+      if (val === '' || val === null || val === undefined) {
+        row[key] = null;
+      } else {
+        row[key] = val;
+      }
+    }
+
+    var tipo = String(row.tipo || '').trim().toLowerCase();
+    if (tipo === 'maiz' || tipo === 'maíz') {
+      result.maiz.push(row);
+    } else if (tipo === 'girasol') {
+      result.girasol.push(row);
+    }
+  }
+
+  return result;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   ██  AGRO — funciones
+   ═══════════════════════════════════════════════════════════ */
+
 function getCatalogoAgro() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Catalogo Agronomia');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Catalogo Agronomia');
   if (!sheet) return { error: 'No se encontró la hoja "Catalogo Agronomia"' };
 
-  const data = sheet.getDataRange().getValues();
-  const catalogo = {};
+  var data = sheet.getDataRange().getValues();
+  var catalogo = {};
 
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[1]) continue; // saltar si no hay producto
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[1]) continue;
 
-    const subtipo = (row[12] || '').toString().trim().toUpperCase();
-    const categoria = SUBTIPO_MAP[subtipo] || subtipo || 'Otros';
+    var subtipo = (row[12] || '').toString().trim().toUpperCase();
+    var categoria = SUBTIPO_MAP[subtipo] || subtipo || 'Otros';
 
-    // Parsear IVA: "21%" → 21
-    let ivaPct = 21;
-    const ivaRaw = (row[5] || '').toString().replace('%', '').replace(',', '.').trim();
+    // Parsear IVA
+    var ivaPct = 21;
+    var ivaRaw = (row[5] || '').toString().replace('%', '').replace(',', '.').trim();
     if (ivaRaw) ivaPct = parseFloat(ivaRaw) || 21;
-    // Si viene como decimal (0.21), convertir
     if (ivaPct < 1) ivaPct = ivaPct * 100;
 
-    // Parsear margen: "8%" o "8,00%" → 8
-    let margenPct = 0;
-    const margenRaw = (row[7] || '').toString().replace('%', '').replace(',', '.').trim();
+    // Parsear margen
+    var margenPct = 0;
+    var margenRaw = (row[7] || '').toString().replace('%', '').replace(',', '.').trim();
     if (margenRaw) margenPct = parseFloat(margenRaw) || 0;
     if (margenPct < 1 && margenPct > 0) margenPct = margenPct * 100;
 
-    const producto = {
+    var producto = {
       nro:            Number(row[0]) || i,
       producto:       (row[1] || '').toString().trim(),
       presentacion:   Number(row[2]) || 0,
@@ -163,14 +294,10 @@ function getCatalogoAgro() {
   return { ok: true, catalogo: catalogo };
 }
 
-/* ═══════════════════════════════════════
-   GET FINANCIACION
-   ═══════════════════════════════════════ */
-function getFinanciacion() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Financiacion');
+function getFinanciacionAgro() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Financiacion');
   if (!sheet) {
-    // Default si no existe la hoja
     return {
       ok: true,
       financiacion: [
@@ -181,9 +308,9 @@ function getFinanciacion() {
     };
   }
 
-  const data = sheet.getDataRange().getValues();
-  const plazos = [];
-  for (let i = 1; i < data.length; i++) {
+  var data = sheet.getDataRange().getValues();
+  var plazos = [];
+  for (var i = 1; i < data.length; i++) {
     if (!data[i][0]) continue;
     plazos.push({
       plazo:       data[i][0].toString().trim(),
@@ -195,25 +322,22 @@ function getFinanciacion() {
   return { ok: true, financiacion: plazos };
 }
 
-/* ═══════════════════════════════════════
-   GET HISTORIAL AGRO
-   ═══════════════════════════════════════ */
 function getHistorialAgro() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Historial Cotizaciones');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Historial Cotizaciones');
   if (!sheet) return { ok: true, historial: [] };
 
-  const data = sheet.getDataRange().getValues();
+  var data = sheet.getDataRange().getValues();
   if (data.length <= 1) return { ok: true, historial: [] };
 
-  const rows = data.slice(1).reverse().slice(0, 500);
-  const grouped = {};
-  const orden = []; // mantener orden de aparición (más nuevo primero)
+  var rows = data.slice(1).reverse().slice(0, 500);
+  var grouped = {};
+  var orden = [];
 
-  rows.forEach(row => {
-    const nro = row[0];
+  rows.forEach(function(row) {
+    var nro = row[0];
     if (!nro) return;
-    const has = Number(row[5]) || 0;
+    var has = Number(row[5]) || 0;
     if (!grouped[nro]) {
       orden.push(nro);
       grouped[nro] = {
@@ -228,11 +352,11 @@ function getHistorialAgro() {
         total: 0
       };
     }
-    const precio = Number(row[11]) || 0;
-    const dosis = Number(row[12]) || 0;
-    const costoHa = Number(row[13]) || 0;
-    const vol = has > 0 ? dosis * has : 0;
-    const monto = has > 0 ? precio * dosis * has : 0;
+    var precio = Number(row[11]) || 0;
+    var dosis = Number(row[12]) || 0;
+    var costoHa = Number(row[13]) || 0;
+    var vol = has > 0 ? dosis * has : 0;
+    var monto = has > 0 ? precio * dosis * has : 0;
     grouped[nro].lineas.push({
       producto: row[9] || '',
       unidad: row[10] || 'L',
@@ -245,10 +369,9 @@ function getHistorialAgro() {
     grouped[nro].total += costoHa;
   });
 
-  // Mantener orden descendente (más nuevo primero)
-  const result = orden.map(nro => grouped[nro]);
-  result.forEach(h => {
-    const totalHas = h.hectareas > 0 ? (h.total * h.hectareas).toFixed(2) : '';
+  var result = orden.map(function(nro) { return grouped[nro]; });
+  result.forEach(function(h) {
+    var totalHas = h.hectareas > 0 ? (h.total * h.hectareas).toFixed(2) : '';
     h.total = h.total.toFixed(2);
     h.totalHas = totalHas;
   });
@@ -256,31 +379,25 @@ function getHistorialAgro() {
   return { ok: true, historial: result };
 }
 
-/* ═══════════════════════════════════════
-   GET NEXT NUMBER AGRO
-   ═══════════════════════════════════════ */
 function getNextNumberAgro() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Historial Cotizaciones');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Historial Cotizaciones');
   if (!sheet) return { numero: 1 };
 
-  const data = sheet.getDataRange().getValues();
+  var data = sheet.getDataRange().getValues();
   if (data.length <= 1) return { numero: 1 };
 
-  let max = 0;
-  for (let i = 1; i < data.length; i++) {
-    const n = Number(data[i][0]) || 0;
+  var max = 0;
+  for (var i = 1; i < data.length; i++) {
+    var n = Number(data[i][0]) || 0;
     if (n > max) max = n;
   }
   return { numero: max + 1 };
 }
 
-/* ═══════════════════════════════════════
-   REGISTRAR COTIZACION AGRO
-   ═══════════════════════════════════════ */
 function registrarCotizacionAgro(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Historial Cotizaciones');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Historial Cotizaciones');
 
   if (!sheet) {
     sheet = ss.insertSheet('Historial Cotizaciones');
@@ -293,25 +410,25 @@ function registrarCotizacionAgro(data) {
     ]);
   }
 
-  const nextNum = getNextNumberAgro().numero;
-  const fecha = new Date();
-  const lineas = data.lineas || [];
+  var nextNum = getNextNumberAgro().numero;
+  var fecha = new Date();
+  var lineas = data.lineas || [];
 
-  let totalCotiz = 0;
-  lineas.forEach(l => {
-    const costoHa = (Number(l.precio) || 0) * (Number(l.dosis) || 0);
-    const iva = costoHa * ((Number(l.iva_pct) || 21) / 100);
+  var totalCotiz = 0;
+  lineas.forEach(function(l) {
+    var costoHa = (Number(l.precio) || 0) * (Number(l.dosis) || 0);
+    var iva = costoHa * ((Number(l.iva_pct) || 21) / 100);
     totalCotiz += (costoHa + iva) * (Number(data.hectareas) || 1);
   });
 
-  lineas.forEach(l => {
-    const precio = Number(l.precio) || 0;
-    const dosis = Number(l.dosis) || 0;
-    const costoHa = precio * dosis;
-    const has = Number(data.hectareas) || 0;
-    const subtSinIva = has > 0 ? costoHa * has : costoHa;
-    const ivaPct = Number(l.iva_pct) || 21;
-    const ivaMonto = subtSinIva * (ivaPct / 100);
+  lineas.forEach(function(l) {
+    var precio = Number(l.precio) || 0;
+    var dosis = Number(l.dosis) || 0;
+    var costoHa = precio * dosis;
+    var has = Number(data.hectareas) || 0;
+    var subtSinIva = has > 0 ? costoHa * has : costoHa;
+    var ivaPct = Number(l.iva_pct) || 21;
+    var ivaMonto = subtSinIva * (ivaPct / 100);
 
     sheet.appendRow([
       nextNum, fecha, data.vendedor || '', data.cliente || '',
@@ -325,18 +442,14 @@ function registrarCotizacionAgro(data) {
   return { ok: true, numero: nextNum };
 }
 
-/* ═══════════════════════════════════════
-   GET CLIENTES
-   Lee la hoja "Clientes" (columnas: A=Cliente, B=CUIT)
-   ═══════════════════════════════════════ */
 function getClientes() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Clientes');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Clientes');
   if (!sheet) return { ok: true, clientes: [] };
 
-  const data = sheet.getDataRange().getValues();
-  const clientes = [];
-  for (let i = 1; i < data.length; i++) {
+  var data = sheet.getDataRange().getValues();
+  var clientes = [];
+  for (var i = 1; i < data.length; i++) {
     if (!data[i][0]) continue;
     clientes.push({
       nombre: data[i][0].toString().trim(),
@@ -346,13 +459,9 @@ function getClientes() {
   return { ok: true, clientes: clientes };
 }
 
-/* ═══════════════════════════════════════
-   ADD CLIENTE
-   Agrega un cliente nuevo a la hoja "Clientes"
-   ═══════════════════════════════════════ */
 function addCliente(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Clientes');
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Clientes');
   if (!sheet) {
     sheet = ss.insertSheet('Clientes');
     sheet.appendRow(['Cliente', 'CUIT']);
